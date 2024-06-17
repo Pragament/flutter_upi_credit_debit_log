@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "205658326203",
+    "project_id": "payupi-60fbd",
+    "storage_bucket": "payupi-60fbd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:205658326203:android:948cd27a8595fc5218d59e",
+        "android_client_info": {
+          "package_name": "com.example.pay"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbxOJcIfWHOBaCuBcfkndEs4we7y3PwJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

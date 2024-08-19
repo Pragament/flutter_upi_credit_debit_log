@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:quick_actions/quick_actions.dart';
+import 'package:payment/Create.dart';
 import 'package:payment/pay.dart';
+import 'package:quick_actions/quick_actions.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -283,6 +284,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     quickActions.setShortcutItems(shortcuts);
   }
 
+  String _getInitials(String merchantName) {
+    final words = merchantName.split(' ');
+    final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join();
+    return initials.toUpperCase();
+  }
+
+  String _maskUpiId(String upiId) {
+    if (upiId.length <= 5) {
+      return 'xxxxx';
+    }
+    return 'xxxxx${upiId.substring(5)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -295,58 +309,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-      body: ValueListenableBuilder(
+      body: ValueListenableBuilder<Box<Settings>>(
         valueListenable: settingsBox.listenable(),
-        builder: (context, Box<Settings> box, _) {
-          if (box.values.isEmpty) {
-            return const Center(child: Text('No settings available.'));
-          }
-
+        builder: (context, box, _) {
+          final settingsList = box.values.toList();
           return ListView.builder(
-            itemCount: box.values.length,
+            itemCount: settingsList.length,
             itemBuilder: (context, index) {
-              final settings = box.getAt(index);
-              return Container(
-                margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
+              final settings = settingsList[index];
+              final initials = _getInitials(settings.merchantName);
+              final maskedUpiId = _maskUpiId(settings.upiId);
+              return Card(
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      spreadRadius: 2,
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
+                elevation: 4.0,
+                margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
                 child: ListTile(
-                  onTap: () {
-                    _showForm(settings: settings);
-                  },
                   contentPadding: const EdgeInsets.all(16.0),
-                  title: Text(
-                    settings!.merchantName,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(_maskUpiId(settings.upiId)),
-                  leading: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white, // Background color for the ring
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: Color(settings.color), // Ring color
-                        width: 2,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      backgroundColor: Color(settings.color),
-                      child: Text(
-                        _getInitials(settings.merchantName),
-                        style: const TextStyle(color: Colors.white),
-                      ),
+                  leading: CircleAvatar(
+                    backgroundColor: Color(settings.color),
+                    child: Text(
+                      initials,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
+                  title: Text(settings.merchantName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(maskedUpiId),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _showForm(settings: settings),
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CreateOrderScreen(
+                          merchantName: settings.merchantName,
+                          upiId: settings.upiId,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               );
             },
@@ -354,19 +358,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
         },
       ),
     );
-  }
-
-  String _getInitials(String name) {
-    final words = name.split(' ');
-    if (words.isEmpty) return '';
-    if (words.length == 1) return words[0][0].toUpperCase();
-    return '${words[0][0].toUpperCase()}${words[1][0].toUpperCase()}';
-  }
-
-  String _maskUpiId(String upiId) {
-    if (upiId.length <= 4) {
-      return upiId;
-    }
-    return 'xxxxx${upiId.substring(upiId.length - 4)}';
   }
 }

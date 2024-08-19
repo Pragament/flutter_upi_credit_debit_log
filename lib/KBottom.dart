@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+import 'package:hive/hive.dart';
 import 'package:payment/Create.dart';
 import 'package:payment/HomeScreen.dart';
+import 'package:payment/pay.dart';
 import 'package:payment/settings_Screen.dart';
 
 class KBottom extends StatefulWidget {
@@ -15,6 +17,26 @@ class KBottom extends StatefulWidget {
 class _KBottomState extends State<KBottom> {
   int _bottomNavIndex = 0;
   final PageController _pageController = PageController();
+  String? _merchantName;
+  String? _upiId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settingsBox = Hive.box<Settings>('settings');
+    final settings = settingsBox.get(0);
+
+    if (settings != null) {
+      setState(() {
+        _merchantName = settings.merchantName;
+        _upiId = settings.upiId;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,13 +48,15 @@ class _KBottomState extends State<KBottom> {
             _bottomNavIndex = index;
           });
         },
-        children: const [
-          HomeScreen(),      // Replace with your Home screen widget
-          CreateOrderScreen(), // Replace with your Create screen widget
-          SettingsScreen(),   // Replace with your Settings screen widget
+        children: [
+          const HomeScreen(), // Replace with your Home screen widget
+          CreateOrderScreen(
+            merchantName: _merchantName ?? '', // Pass default value if null
+            upiId: _upiId ?? '', // Pass default value if null
+          ),
+          const SettingsScreen(), // Replace with your Settings screen widget
         ],
       ),
-
       bottomNavigationBar: AnimatedBottomNavigationBar(
         backgroundColor: Colors.blue.withOpacity(0.50), // Update with your color
         elevation: 0,
@@ -45,7 +69,6 @@ class _KBottomState extends State<KBottom> {
         inactiveColor: Colors.white, // Update with your color
         activeColor: Colors.yellow, // Update with your color
         activeIndex: _bottomNavIndex,
-        // gapWidth: 50,
         notchSmoothness: NotchSmoothness.smoothEdge,
         leftCornerRadius: 0,
         rightCornerRadius: 0,

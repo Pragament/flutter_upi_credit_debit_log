@@ -11,7 +11,14 @@ import 'package:payment/qr.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class CreateOrderScreen extends StatefulWidget {
-  const CreateOrderScreen({Key? key}) : super(key: key);
+  final String merchantName;
+  final String upiId;
+
+  const CreateOrderScreen({
+    Key? key,
+    required this.merchantName,
+    required this.upiId,
+  }) : super(key: key);
 
   @override
   _CreateOrderScreenState createState() => _CreateOrderScreenState();
@@ -28,25 +35,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   Timer? _timer;
   int _secondsLeft = 120;
 
-  String? _merchantName;
-  String? _upiId;
+  late String _merchantName;
+  late String _upiId;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    final settingsBox = Hive.box<Settings>('settings');
-    final settings = settingsBox.get(0);
-
-    if (settings != null) {
-      setState(() {
-        _merchantName = settings.merchantName;
-        _upiId = settings.upiId;
-      });
-    }
+    // Initialize with the passed parameters
+    _merchantName = widget.merchantName;
+    _upiId = widget.upiId;
   }
 
   @override
@@ -59,7 +56,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   void _generateQrCode() {
-    if (_upiId == null || _merchantName == null) {
+    print(_merchantName);
+    if (_upiId.isEmpty || _merchantName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text(

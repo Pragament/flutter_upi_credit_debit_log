@@ -61,7 +61,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   void _generateQrCode() {
     if (_upiId == null || _merchantName == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('UPI ID or Merchant Name is missing. Please configure it in settings.')),
+        const SnackBar(
+            content: Text(
+                'UPI ID or Merchant Name is missing. Please configure it in settings.')),
       );
       return;
     }
@@ -69,7 +71,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     setState(() {
       _clientTxnId = DateTime.now().millisecondsSinceEpoch.toString();
       _qrCodeData =
-      'upi://pay?pa=$_upiId&pn=$_merchantName&am=${_amountController.text}&tn=$_clientTxnId&cu=INR';
+          'upi://pay?pa=$_upiId&pn=$_merchantName&am=${_amountController.text}&tn=$_clientTxnId&cu=INR';
       _startTimer();
     });
   }
@@ -91,20 +93,54 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   Future<void> _pickInvoiceImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _invoiceImage = pickedFile.path;
-      });
+    try {
+      final pickedFile =
+          await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (!mounted) return; // Ensure the widget is still mounted
+
+      if (pickedFile != null) {
+        setState(() {
+          _invoiceImage = pickedFile.path;
+        });
+      } else {
+        // Handle the case when no image is selected
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No image selected')),
+        );
+      }
+    } catch (e) {
+      // Log the error and show a snackbar
+      if (!mounted) return; // Ensure the widget is still mounted
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick image: $e')),
+      );
     }
   }
 
   Future<void> _pickTransactionImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _transactionImage = pickedFile.path;
-      });
+    try {
+      final pickedFile =
+          await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (!mounted) return; // Ensure the widget is still mounted
+
+      if (pickedFile != null) {
+        setState(() {
+          _transactionImage = pickedFile.path;
+        });
+      } else {
+        // Handle the case when no image is selected
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No image selected')),
+        );
+      }
+    } catch (e) {
+      // Log the error and show a snackbar
+      if (!mounted) return; // Ensure the widget is still mounted
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick image: $e')),
+      );
     }
   }
 

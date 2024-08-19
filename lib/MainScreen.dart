@@ -15,18 +15,18 @@ class MainScreen extends StatelessWidget {
     return FutureBuilder<bool>(
       future: _authenticate(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (snapshot.hasError || !snapshot.data!) {
-          return Scaffold(
-            body: Center(child: Text('Authentication failed')),
-          );
-        } else {
-          return KBottom(quickActions: quickActions);
-        }
-        //return KBottom(quickActions: quickActions);
+        // if (snapshot.connectionState == ConnectionState.waiting) {
+        //   return Scaffold(
+        //     body: Center(child: CircularProgressIndicator()),
+        //   );
+        // } else if (snapshot.hasError || !snapshot.data!) {
+        //   return Scaffold(
+        //     body: Center(child: Text('Authentication failed')),
+        //   );
+        // } else {
+        //   return KBottom(quickActions: quickActions);
+        // }
+        return KBottom(quickActions: quickActions);
       },
     );
   }

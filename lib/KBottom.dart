@@ -2,12 +2,13 @@ import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.da
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:payment/settings_screen.dart';
 import 'package:quick_actions/quick_actions.dart';
 
 import 'package:payment/Create.dart';
 import 'package:payment/HomeScreen.dart';
 import 'package:payment/pay.dart';
-import 'package:payment/settings_Screen.dart';
+
 
 class KBottom extends StatefulWidget {
   final QuickActions quickActions;

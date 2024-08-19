@@ -202,7 +202,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       currency: _currencyController.text,
       color: _selectedColor.value,
       createShortcut: _createShortcut,
-      archived: false,
+      archived: false, productIds: [],
     );
 
     await settingsBox.put(id, settings);

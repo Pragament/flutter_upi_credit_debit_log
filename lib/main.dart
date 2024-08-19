@@ -8,7 +8,6 @@ import 'package:quick_actions/quick_actions.dart';
 import 'package:payment/Create.dart';
 import 'package:payment/HomeScreen.dart';
 import 'package:payment/pay.dart';
-import 'package:payment/settings_Screen.dart';
 
 // Global key for navigation
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -23,9 +22,15 @@ void main() async {
 
   Hive.registerAdapter(OrderAdapter());
   Hive.registerAdapter(SettingsAdapter());
+  Hive.registerAdapter(ProductAdapter());
+
+  // await Hive.deleteBoxFromDisk('orders');
+  // await Hive.deleteBoxFromDisk('settings');
+  // await Hive.deleteBoxFromDisk('products');
 
   await Hive.openBox<Order>('orders');
   await Hive.openBox<Settings>('settings');
+  await Hive.openBox<Product>('products');
 
   // Initialize Quick Actions
   const QuickActions quickActions = QuickActions();
@@ -63,7 +68,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey, // Use the global key here
       debugShowCheckedModeBanner: false,
-      home: MainScreen(quickActions: quickActions), // Use MainScreen as the initial route
+      home: MainScreen(
+          quickActions: quickActions), // Use MainScreen as the initial route
     );
   }
 }

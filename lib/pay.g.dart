@@ -82,13 +82,14 @@ class SettingsAdapter extends TypeAdapter<Settings> {
       createShortcut: fields[5] as bool,
       archived: fields[6] as bool,
       archiveDate: fields[7] as DateTime?,
+      productIds: (fields[8] as List).cast<int>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Settings obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -104,7 +105,9 @@ class SettingsAdapter extends TypeAdapter<Settings> {
       ..writeByte(6)
       ..write(obj.archived)
       ..writeByte(7)
-      ..write(obj.archiveDate);
+      ..write(obj.archiveDate)
+      ..writeByte(8)
+      ..write(obj.productIds);
   }
 
   @override
@@ -114,6 +117,52 @@ class SettingsAdapter extends TypeAdapter<Settings> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is SettingsAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class ProductAdapter extends TypeAdapter<Product> {
+  @override
+  final int typeId = 2;
+
+  @override
+  Product read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Product(
+      id: fields[0] as int,
+      name: fields[1] as String,
+      price: fields[2] as double,
+      description: fields[3] as String,
+      imageUrl: fields[4] as String,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Product obj) {
+    writer
+      ..writeByte(5)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.price)
+      ..writeByte(3)
+      ..write(obj.description)
+      ..writeByte(4)
+      ..write(obj.imageUrl);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProductAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

@@ -74,22 +74,37 @@ class SettingsAdapter extends TypeAdapter<Settings> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Settings(
-      merchantName: fields[0] as String,
-      upiId: fields[1] as String,
-      currency: fields[2] as String,
+      id: fields[0] as int,
+      merchantName: fields[1] as String,
+      upiId: fields[2] as String,
+      currency: fields[3] as String,
+      color: fields[4] as int,
+      createShortcut: fields[5] as bool,
+      archived: fields[6] as bool,
+      archiveDate: fields[7] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Settings obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(8)
       ..writeByte(0)
-      ..write(obj.merchantName)
+      ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.upiId)
+      ..write(obj.merchantName)
       ..writeByte(2)
-      ..write(obj.currency);
+      ..write(obj.upiId)
+      ..writeByte(3)
+      ..write(obj.currency)
+      ..writeByte(4)
+      ..write(obj.color)
+      ..writeByte(5)
+      ..write(obj.createShortcut)
+      ..writeByte(6)
+      ..write(obj.archived)
+      ..writeByte(7)
+      ..write(obj.archiveDate);
   }
 
   @override

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:payment/Create.dart';
 import 'package:payment/HomeScreen.dart';
-import 'package:payment/SettingScreen.dart';
+import 'package:payment/settings_Screen.dart';
 
 class KBottom extends StatefulWidget {
   const KBottom({Key? key}) : super(key: key);

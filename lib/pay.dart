@@ -35,13 +35,37 @@ class Order extends HiveObject {
 @HiveType(typeId: 1)
 class Settings extends HiveObject {
   @HiveField(0)
-  late String merchantName;
+  late int id;
 
   @HiveField(1)
-  late String upiId;
+  late String merchantName;
 
   @HiveField(2)
+  late String upiId;
+
+  @HiveField(3)
   late String currency;
 
-  Settings({required this.merchantName, required this.upiId, required this.currency});
+  @HiveField(4)
+  late int color;
+
+  @HiveField(5)
+  late bool createShortcut;
+
+  @HiveField(6)
+  late bool archived; // New field to indicate if the account is archived
+
+  @HiveField(7)
+  DateTime? archiveDate; // New field to store the date when the account was archived
+
+  Settings({
+    required this.id,
+    required this.merchantName,
+    required this.upiId,
+    required this.currency,
+    required this.color,
+    this.createShortcut = false,
+    this.archived = false,
+    this.archiveDate,
+  });
 }

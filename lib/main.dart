@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:payment/MainScreen.dart';
@@ -16,13 +16,18 @@ void main() async {
   Hive.registerAdapter(OrderAdapter());
   Hive.registerAdapter(SettingsAdapter());
 
+  // await Hive.deleteBoxFromDisk('settings');
+  // await Hive.deleteBoxFromDisk('orders');
+
   await Hive.openBox<Order>('orders');
   await Hive.openBox<Settings>('settings');
 
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

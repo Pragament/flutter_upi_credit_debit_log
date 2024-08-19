@@ -1,14 +1,20 @@
+import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:hive/hive.dart';
+import 'package:quick_actions/quick_actions.dart';
+
 import 'package:payment/Create.dart';
 import 'package:payment/HomeScreen.dart';
 import 'package:payment/pay.dart';
 import 'package:payment/settings_Screen.dart';
 
 class KBottom extends StatefulWidget {
-  const KBottom({Key? key}) : super(key: key);
+  final QuickActions quickActions;
+  const KBottom({
+    Key? key,
+    required this.quickActions,
+  }) : super(key: key);
 
   @override
   State<KBottom> createState() => _KBottomState();
@@ -54,7 +60,9 @@ class _KBottomState extends State<KBottom> {
             merchantName: _merchantName ?? '', // Pass default value if null
             upiId: _upiId ?? '', // Pass default value if null
           ),
-          const SettingsScreen(), // Replace with your Settings screen widget
+          SettingsScreen(
+            quickActions: widget.quickActions, // Pass the QuickActions instance
+          ),
         ],
       ),
       bottomNavigationBar: AnimatedBottomNavigationBar(

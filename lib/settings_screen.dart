@@ -1,40 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:payment/Create.dart';
-import 'package:payment/pay.dart';
 import 'package:quick_actions/quick_actions.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:payment/pay.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  final QuickActions quickActions;
+
+  const SettingsScreen({Key? key, required this.quickActions})
+      : super(key: key);
 
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  late Box<Settings> settingsBox;
+  Color _selectedColor = Colors.blue;
   final TextEditingController _merchantNameController = TextEditingController();
   final TextEditingController _upiIdController = TextEditingController();
   final TextEditingController _currencyController = TextEditingController();
   bool _createShortcut = false;
 
-  late Box<Settings> settingsBox;
-  Color _selectedColor = Colors.blue;
-
   @override
   void initState() {
     super.initState();
     settingsBox = Hive.box<Settings>('settings');
-    final QuickActions quickActions = QuickActions();
-    quickActions.initialize((String shortcutType) {
-      if (shortcutType.startsWith('create_order_')) {
-        final accountId = int.parse(shortcutType.split('_').last);
-        Navigator.pushNamed(context, '/createOrder', arguments: accountId);
-      }
-    });
-
-    // Ensure quick actions are initialized with existing settings
-    _manageQuickActions();
   }
 
   void _showForm({Settings? settings}) {
@@ -52,7 +44,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _createShortcut = false;
     }
 
-    // Calculate isDeletable before showing the dialog
     final bool isArchived = settings?.archived ?? false;
     final DateTime? archiveDate = settings?.archiveDate;
     final bool isDeletable = !isArchived ||
@@ -138,27 +129,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () {
-              if (settings != null && !isDeletable) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        'You cannot delete this account until 30 days have passed since archiving.'),
+          settings != null
+              ? TextButton(
+                  onPressed: () {
+                    if (settings != null && !isDeletable) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'You cannot delete this account until 30 days have passed since archiving.'),
+                        ),
+                      );
+                    } else if (settings != null) {
+                      _deleteSettings(settings);
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: Text(
+                    'Delete',
+                    style: TextStyle(
+                      color: isDeletable ? Colors.red : Colors.grey,
+                    ),
                   ),
-                );
-              } else if (settings != null) {
-                _deleteSettings(settings);
-                Navigator.of(context).pop();
-              }
-            },
-            child: Text(
-              'Delete',
-              style: TextStyle(
-                color: isDeletable ? Colors.red : Colors.grey,
-              ),
-            ),
-          ),
+                )
+              : const SizedBox(
+                  height: 0,
+                  width: 0,
+                ),
           TextButton(
             onPressed: () {
               if (settings == null) {
@@ -254,24 +250,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _createQuickAction(Settings settings) {
-    final QuickActions quickActions = QuickActions();
-    quickActions.setShortcutItems(<ShortcutItem>[
+    widget.quickActions.setShortcutItems(<ShortcutItem>[
       ShortcutItem(
         type: 'create_order_${settings.id}',
         localizedTitle: 'Create Order for ${settings.merchantName}',
-        //icon: 'icon_add_order', // Ensure this icon is added to your app's assets
+        //icon: 'icon_add_order',
       ),
     ]);
   }
 
   void _removeQuickAction(Settings settings) {
-    final QuickActions quickActions = QuickActions();
-    quickActions.clearShortcutItems();
+    widget.quickActions.clearShortcutItems();
   }
 
   void _manageQuickActions() {
-    final QuickActions quickActions = QuickActions();
-    final shortcuts = settingsBox.values
+    final shortcuts = Hive.box<Settings>('settings')
+        .values
         .where((settings) => settings.createShortcut)
         .map((settings) {
       return ShortcutItem(
@@ -281,20 +275,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
     }).toList();
 
-    quickActions.setShortcutItems(shortcuts);
+    widget.quickActions.setShortcutItems(shortcuts);
   }
 
-  String _getInitials(String merchantName) {
-    final words = merchantName.split(' ');
-    final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join();
-    return initials.toUpperCase();
-  }
-
-  String _maskUpiId(String upiId) {
-    if (upiId.length <= 5) {
-      return 'xxxxx';
+  String _formatUpiId(String upiId) {
+    if (upiId.length > 6) {
+      return 'xxxxxxx${upiId.substring(upiId.length - 6)}';
     }
-    return 'xxxxx${upiId.substring(5)}';
+    return upiId;
   }
 
   @override
@@ -310,39 +298,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
       body: ValueListenableBuilder<Box<Settings>>(
-        valueListenable: settingsBox.listenable(),
+        valueListenable: Hive.box<Settings>('settings').listenable(),
         builder: (context, box, _) {
-          final settingsList = box.values.toList();
           return ListView.builder(
-            itemCount: settingsList.length,
+            itemCount: box.values.length,
             itemBuilder: (context, index) {
-              final settings = settingsList[index];
-              final initials = _getInitials(settings.merchantName);
-              final maskedUpiId = _maskUpiId(settings.upiId);
-              return Card(
-                shape: RoundedRectangleBorder(
+              final settings = box.getAt(index);
+              final initials = settings!.merchantName
+                  .split(' ')
+                  .map((word) => word[0])
+                  .take(2)
+                  .join()
+                  .toUpperCase(); // Ensure initials are in uppercase
+
+              return Container(
+                margin:
+                    const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(12.0),
-                ),
-                elevation: 4.0,
-                margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16.0),
-                  leading: CircleAvatar(
-                    backgroundColor: Color(settings.color),
-                    child: Text(
-                      initials,
-                      style: const TextStyle(color: Colors.white),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      spreadRadius: 2,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
                     ),
-                  ),
-                  title: Text(settings.merchantName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(maskedUpiId),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => _showForm(settings: settings),
-                  ),
+                  ],
+                ),
+                child: ListTile(
                   onTap: () {
-                    Navigator.push(
-                      context,
+                    Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => CreateOrderScreen(
                           merchantName: settings.merchantName,
@@ -351,6 +337,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     );
                   },
+                  contentPadding: const EdgeInsets.all(12.0),
+                  leading: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(settings.color),
+                      border: Border.all(
+                        color: Colors.white, // Ensure there's enough contrast
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        initials,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18, // Adjust text size if needed
+                        ),
+                      ),
+                    ),
+                  ),
+                  title: Text(settings.merchantName),
+                  subtitle: Text(_formatUpiId(settings.upiId)),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _showForm(settings: settings),
+                  ),
                 ),
               );
             },

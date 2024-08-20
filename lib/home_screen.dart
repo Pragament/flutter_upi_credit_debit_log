@@ -737,9 +737,22 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Container productTile(
-      Product? product, Settings settings, Function() refreshCallback) {
-    return Container(
+ GestureDetector productTile(Product? product, Settings settings, Function() refreshCallback) {
+  return GestureDetector(
+    onTap: () {
+      if (product != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => CreateOrderScreen(
+              merchantName: settings.merchantName,
+              upiId: settings.upiId,
+              amount: product.price, // Passing the product price as the amount
+            ),
+          ),
+        );
+      }
+    },
+    child: Container(
       width: 220,
       height: 120,
       margin: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -827,14 +840,17 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.edit, color: Colors.grey),
               onPressed: () {
                 if (product != null) {
-                  _showEditProductForm(
-                      context, product, settings, refreshCallback);
+                  _showEditProductForm(context, product, settings, refreshCallback);
                 }
               },
             ),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+
+
 }

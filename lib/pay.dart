@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import 'package:path_provider/path_provider.dart'; // For getting application documents directory
+ // For getting application documents directory
 
 part 'pay.g.dart';
 

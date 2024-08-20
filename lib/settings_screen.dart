@@ -23,12 +23,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _upiIdController = TextEditingController();
   final TextEditingController _currencyController = TextEditingController();
   bool _createShortcut = false;
+  
 
   @override
   void initState() {
     super.initState();
     settingsBox = Hive.box<Settings>('settings');
     productBox = Hive.box<Product>('products');
+    _manageQuickActions(); // Initialize quick actions on startup
+    _manageProductQuickActions(); // Initialize product quick actions
   }
 
   void _showForm({Settings? settings}) {
@@ -266,7 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     widget.quickActions.clearShortcutItems();
   }
 
-  void _manageQuickActions() {
+ void _manageQuickActions() {
     final shortcuts = Hive.box<Settings>('settings')
         .values
         .where((settings) => settings.createShortcut)
@@ -274,7 +277,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return ShortcutItem(
         type: 'create_order_${settings.id}',
         localizedTitle: 'Create Order for ${settings.merchantName}',
-        //icon: 'icon_add_order',
       );
     }).toList();
 
@@ -303,6 +305,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         .join()
         .toUpperCase();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -334,98 +337,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-
-Container itemCard(BuildContext context, Settings settings, String initials) {
-  return Container(
-    margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Card containing the leading, title, subtitle, and trailing
-        Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.0),
-          ),
-          elevation: 2,
-          child: ListTile(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => CreateOrderScreen(
-                    merchantName: settings.merchantName,
-                    upiId: settings.upiId,
+  Container itemCard(BuildContext context, Settings settings, String initials) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Card containing the leading, title, subtitle, and trailing
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            elevation: 2,
+            child: ListTile(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => CreateOrderScreen(
+                      merchantName: settings.merchantName,
+                      upiId: settings.upiId,
+                    ),
                   ),
-                ),
-              );
-            },
-            contentPadding: const EdgeInsets.all(16.0),
-            leading: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(settings.color),
-                border: Border.all(
-                  color: Colors.white,
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  initials,
-                  style: const TextStyle(
+                );
+              },
+              contentPadding: const EdgeInsets.all(16.0),
+              leading: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(settings.color),
+                  border: Border.all(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
               ),
-            ),
-            title: Text(settings.merchantName),
-            subtitle: Text(_formatUpiId(settings.upiId)),
-            trailing: IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _showForm(settings: settings),
+              title: Text(settings.merchantName),
+              subtitle: Text(_formatUpiId(settings.upiId)),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => _showForm(settings: settings),
+              ),
             ),
           ),
-        ),
 
-        // Container for displaying the products
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: settings.productIds.length,
-            itemBuilder: (context, index) {
-              final productId = settings.productIds[index];
-              final product = productBox.get(productId); // Retrieve product by ID
+          // Container for displaying the products
+          SizedBox(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: settings.productIds.length,
+              itemBuilder: (context, index) {
+                final productId = settings.productIds[index];
+                final product = productBox.get(productId);
 
-              // Debugging: Print the product ID and retrieved product details
-              print('Retrieving product with ID: $productId');
-              if (product != null) {
-                print('Product name: ${product.name}');
-              } else {
-                print('Product is null');
-              }
-
-              return productTile(product);
-            },
+                return productTile(product, settings);
+              },
+            ),
           ),
-        ),
 
-        // Add product button
-        IconButton(
-          icon: const Icon(Icons.add),
-          onPressed: () => _showAddProductForm(context, settings),
-          padding: const EdgeInsets.all(8.0),
-        ),
-      ],
-    ),
-  );
-}
+          // Add product button
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _showAddProductForm(context, settings),
+            padding: const EdgeInsets.all(8.0),
+          ),
+        ],
+      ),
+    );
+  }
 
- 
-  Container productTile(Product? product) {
+  Container productTile(Product? product, Settings settings) {
     return Container(
       width: 100,
       margin: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -433,114 +426,290 @@ Container itemCard(BuildContext context, Settings settings, String initials) {
         color: Colors.blueAccent,
         borderRadius: BorderRadius.circular(8.0),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
         children: [
-          if (product != null)
-            product.imageUrl.isNotEmpty
-                ? Image.network(product.imageUrl)
-                : const Icon(Icons.category, color: Colors.white)
-          else
-            const Icon(Icons.category, color: Colors.white),
-          Text(
-            product != null && product.name.isNotEmpty
-                ? product.name
-                : 'Unknown',
-            style: const TextStyle(color: Colors.white),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (product != null && product.imageUrl.isNotEmpty)
+                Image.network(product.imageUrl)
+              else
+                const Icon(Icons.category, color: Colors.white),
+              Text(
+                product != null && product.name.isNotEmpty
+                    ? product.name
+                    : 'Unknown',
+                style: const TextStyle(color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white),
+              onPressed: () {
+                if (product != null) {
+                  _showEditProductForm(context, product, settings);
+                }
+              },
+            ),
           ),
         ],
       ),
     );
   }
+void _manageProductQuickActions() {
+    final products = Hive.box<Product>('products').values.toList();
+    final shortcuts = products.map((product) {
+      return ShortcutItem(
+        type: 'view_product_${product.id}',
+        localizedTitle: 'View Product ${product.name}',
+      );
+    }).toList();
 
-
-
-void _showAddProductForm(BuildContext context, Settings settings) {
-  final TextEditingController productNameController = TextEditingController();
-  final TextEditingController productDescriptionController = TextEditingController();
-  final TextEditingController productPriceController = TextEditingController();
-  final TextEditingController productImageUrlController = TextEditingController();
+    widget.quickActions.setShortcutItems(shortcuts);
+  }
+void _showEditProductForm(
+    BuildContext context, Product product, Settings settings) {
+  final TextEditingController productNameController =
+      TextEditingController(text: product.name);
+  final TextEditingController productDescriptionController =
+      TextEditingController(text: product.description);
+  final TextEditingController productPriceController =
+      TextEditingController(text: product.price.toString());
+  final TextEditingController productImageUrlController =
+      TextEditingController(text: product.imageUrl);
+  
+  bool _createProdShortcut = product.createShortcut;
+  bool _isArchived = product.archived;
+  DateTime? _archiveDate = product.archiveDate;
 
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('Add New Product'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: productNameController,
-                decoration: const InputDecoration(hintText: 'Enter product name'),
-                autofocus: true,
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AlertDialog(
+            title: const Text('Edit Product'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: productNameController,
+                    decoration:
+                        const InputDecoration(hintText: 'Enter product name'),
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 8.0),
+                  TextField(
+                    controller: productDescriptionController,
+                    decoration: const InputDecoration(
+                        hintText: 'Enter product description'),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 8.0),
+                  TextField(
+                    controller: productPriceController,
+                    decoration:
+                        const InputDecoration(hintText: 'Enter product price'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 8.0),
+                  TextField(
+                    controller: productImageUrlController,
+                    decoration: const InputDecoration(
+                        hintText: 'Enter product image URL'),
+                  ),
+                  const SizedBox(height: 16.0),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _createProdShortcut,
+                        onChanged: (value) {
+                          setState(() {
+                            _createProdShortcut = value!;
+                          });
+                        },
+                      ),
+                      const Text('Create Shortcut'),
+                    ],
+                  ),
+                  const SizedBox(height: 16.0),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _isArchived,
+                        onChanged: (value) {
+                          setState(() {
+                            _isArchived = value!;
+                            _archiveDate = value ? DateTime.now() : null;
+                          });
+                        },
+                      ),
+                      const Text('Archived'),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(height: 8.0),
-              TextField(
-                controller: productDescriptionController,
-                decoration: const InputDecoration(hintText: 'Enter product description'),
-                maxLines: 3,
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  final productName = productNameController.text.trim();
+                  final productDescription =
+                      productDescriptionController.text.trim();
+                  final productPrice =
+                      double.tryParse(productPriceController.text.trim()) ?? 0.0;
+                  final productImageUrl = productImageUrlController.text.trim();
+
+                  if (productName.isNotEmpty) {
+                    // Update the product
+                    product.name = productName;
+                    product.description = productDescription;
+                    product.price = productPrice;
+                    product.imageUrl = productImageUrl;
+                    product.archived = _isArchived;
+                    product.archiveDate = _archiveDate;
+
+                    // Save the updated product
+                    product.save();
+
+                    // Update the settings if the shortcut option is enabled
+                    if (_createProdShortcut) {
+                      product.createShortcut = true;
+                      _createProductQuickAction(product);
+                      _manageProductQuickActions();
+                    } else {
+                      product.createShortcut = false;
+                      _manageProductQuickActions();
+                    }
+
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: const Text('Save'),
               ),
-              const SizedBox(height: 8.0),
-              TextField(
-                controller: productPriceController,
-                decoration: const InputDecoration(hintText: 'Enter product price'),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8.0),
-              TextField(
-                controller: productImageUrlController,
-                decoration: const InputDecoration(hintText: 'Enter product image URL'),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Cancel'),
               ),
             ],
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              final productName = productNameController.text.trim();
-              final productDescription = productDescriptionController.text.trim();
-              final productPrice = double.tryParse(productPriceController.text.trim()) ?? 0.0;
-              final productImageUrl = productImageUrlController.text.trim();
-
-              if (productName.isNotEmpty) {
-                // Generate a unique ID by using the next available integer key
-                final productBox = Hive.box<Product>('products');
-                final int newProductId = productBox.isEmpty
-                    ? 0
-                    : productBox.keys.cast<int>().last + 1;
-
-                // Create the new product
-                final newProduct = Product(
-                  id: newProductId,
-                  name: productName,
-                  price: productPrice,
-                  description: productDescription,
-                  imageUrl: productImageUrl,
-                );
-
-                // Save the product to the Hive box
-                productBox.put(newProductId, newProduct);
-
-                // Update the settings with the new product ID
-                settings.productIds.add(newProductId);
-                Hive.box<Settings>('settings').put(settings.key, settings);
-
-                Navigator.of(context).pop();
-              }
-            },
-            child: const Text('Save'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Cancel'),
-          ),
-        ],
+          );
+        },
       );
     },
   );
 }
 
+void _createProductQuickAction(Product product) {
+  final QuickActions quickActions = QuickActions();
+  quickActions.setShortcutItems([
+    ShortcutItem(
+      type: 'view_product_${product.id}',
+      localizedTitle: 'View Product ${product.name}',
+    ),
+  ]);
+}
+
+  void _showAddProductForm(BuildContext context, Settings settings) {
+    final TextEditingController productNameController = TextEditingController();
+    final TextEditingController productDescriptionController =
+        TextEditingController();
+    final TextEditingController productPriceController =
+        TextEditingController();
+    final TextEditingController productImageUrlController =
+        TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add New Product'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: productNameController,
+                  decoration:
+                      const InputDecoration(hintText: 'Enter product name'),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 8.0),
+                TextField(
+                  controller: productDescriptionController,
+                  decoration: const InputDecoration(
+                      hintText: 'Enter product description'),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 8.0),
+                TextField(
+                  controller: productPriceController,
+                  decoration:
+                      const InputDecoration(hintText: 'Enter product price'),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8.0),
+                TextField(
+                  controller: productImageUrlController,
+                  decoration: const InputDecoration(
+                      hintText: 'Enter product image URL'),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                final productName = productNameController.text.trim();
+                final productDescription =
+                    productDescriptionController.text.trim();
+                final productPrice =
+                    double.tryParse(productPriceController.text.trim()) ?? 0.0;
+                final productImageUrl = productImageUrlController.text.trim();
+
+                if (productName.isNotEmpty) {
+                  // Generate a unique ID by using the next available integer key
+                  final productBox = Hive.box<Product>('products');
+                  final int newProductId = productBox.isEmpty
+                      ? 0
+                      : productBox.keys.cast<int>().last + 1;
+
+                  // Create the new product
+                  final newProduct = Product(
+                    id: newProductId,
+                    name: productName,
+                    price: productPrice,
+                    description: productDescription,
+                    imageUrl: productImageUrl,
+                  );
+
+                  // Save the product to the Hive box
+                  productBox.put(newProductId, newProduct);
+
+                  // Update the settings with the new product ID
+                  settings.productIds.add(newProductId);
+                  Hive.box<Settings>('settings').put(settings.key, settings);
+
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Save'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }

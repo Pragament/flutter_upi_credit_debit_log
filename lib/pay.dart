@@ -74,7 +74,6 @@ class Settings extends HiveObject {
     required this.productIds,
   });
 }
-
 @HiveType(typeId: 2)
 class Product extends HiveObject {
   @HiveField(0)
@@ -92,11 +91,24 @@ class Product extends HiveObject {
   @HiveField(4)
   late String imageUrl;
 
+  @HiveField(5)
+  bool archived = false; // New field
+
+  @HiveField(6)
+  DateTime? archiveDate; // New field
+
+  @HiveField(7)
+  bool createShortcut = false; // New field
+
   Product({
     required this.id,
     required this.name,
     required this.price,
     required this.description,
     required this.imageUrl,
+    this.archived = false, // Default value
+    this.archiveDate,
+    this.createShortcut = false, // Default value
   });
 }
+

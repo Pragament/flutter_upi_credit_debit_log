@@ -5,14 +5,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:hive/hive.dart';
 import 'pay.dart'; // Assuming your Hive models are in pay.dart
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+class TransactionScreen extends StatefulWidget {
+  const TransactionScreen({Key? key}) : super(key: key);
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  _TransactionScreenState createState() => _TransactionScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _TransactionScreenState extends State<TransactionScreen> {
   final ImagePicker _picker = ImagePicker();
   Box<Order>? orderBox;
   List<Order> orders = [];
@@ -45,24 +45,25 @@ class _HomeScreenState extends State<HomeScreen> {
       body: orderBox == null
           ? const Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          _buildFilters(),
-          Expanded(
-            child: orders.isEmpty
-                ? const Center(child: Text('No transactions available'))
-                : ListView.builder(
-              itemCount: orders.length,
-              itemBuilder: (context, index) {
-                final order = orders[index];
-                if (selectedStatus != 'All' && order.status != selectedStatus) {
-                  return SizedBox.shrink();
-                }
-                return _buildOrderCard(order);
-              },
+              children: [
+                _buildFilters(),
+                Expanded(
+                  child: orders.isEmpty
+                      ? const Center(child: Text('No transactions available'))
+                      : ListView.builder(
+                          itemCount: orders.length,
+                          itemBuilder: (context, index) {
+                            final order = orders[index];
+                            if (selectedStatus != 'All' &&
+                                order.status != selectedStatus) {
+                              return SizedBox.shrink();
+                            }
+                            return _buildOrderCard(order);
+                          },
+                        ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -114,15 +115,22 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Order ID: ${order.orderId}', style: Theme.of(context).textTheme.titleLarge),
-            Text('Amount: ${order.amount}', style: Theme.of(context).textTheme.bodyLarge),
-            Text('Status: ${order.status}', style: Theme.of(context).textTheme.bodyLarge),
-            Text('UTR Number: ${order.utrNumber}', style: Theme.of(context).textTheme.bodyLarge),
-            Text('Client Notes: ${order.clientNotes}', style: Theme.of(context).textTheme.bodyLarge),
+            Text('Order ID: ${order.orderId}',
+                style: Theme.of(context).textTheme.titleLarge),
+            Text('Amount: ${order.amount}',
+                style: Theme.of(context).textTheme.bodyLarge),
+            Text('Status: ${order.status}',
+                style: Theme.of(context).textTheme.bodyLarge),
+            Text('UTR Number: ${order.utrNumber}',
+                style: Theme.of(context).textTheme.bodyLarge),
+            Text('Client Notes: ${order.clientNotes}',
+                style: Theme.of(context).textTheme.bodyLarge),
             SizedBox(height: 8),
-            Text('Invoice Image:', style: Theme.of(context).textTheme.bodyLarge),
+            Text('Invoice Image:',
+                style: Theme.of(context).textTheme.bodyLarge),
             _buildImageWidget(order.invoiceImageUrl, () async {
-              final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+              final pickedFile =
+                  await _picker.pickImage(source: ImageSource.gallery);
               if (pickedFile != null) {
                 setState(() {
                   order.invoiceImageUrl = pickedFile.path;
@@ -131,9 +139,11 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             }),
             SizedBox(height: 8),
-            Text('Transaction Image:', style: Theme.of(context).textTheme.bodyLarge),
+            Text('Transaction Image:',
+                style: Theme.of(context).textTheme.bodyLarge),
             _buildImageWidget(order.transactionImageUrl, () async {
-              final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+              final pickedFile =
+                  await _picker.pickImage(source: ImageSource.gallery);
               if (pickedFile != null) {
                 setState(() {
                   order.transactionImageUrl = pickedFile.path;
@@ -142,7 +152,8 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             }),
             SizedBox(height: 8),
-            Text('Timestamp: ${order.timestamp}', style: Theme.of(context).textTheme.bodyLarge),
+            Text('Timestamp: ${order.timestamp}',
+                style: Theme.of(context).textTheme.bodyLarge),
             SizedBox(height: 8),
             ElevatedButton(
               onPressed: () {
@@ -161,11 +172,11 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () => onTap(),
       child: imagePath == null || imagePath.isEmpty
           ? Container(
-        width: 100,
-        height: 100,
-        color: Colors.grey[300],
-        child: Icon(Icons.image, color: Colors.grey[700]),
-      )
+              width: 100,
+              height: 100,
+              color: Colors.grey[300],
+              child: Icon(Icons.image, color: Colors.grey[700]),
+            )
           : Image.file(File(imagePath), width: 100, height: 100),
     );
   }
@@ -195,7 +206,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     DropdownButton<String>(
                       value: newStatus,
-                      items: <String>['Pending', 'Completed'].map((String value) {
+                      items:
+                          <String>['Pending', 'Completed'].map((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
                           child: Text(value),
@@ -221,7 +233,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text('Invoice Image:'),
                     SizedBox(height: 8),
                     _buildImageWidget(order.invoiceImageUrl, () async {
-                      final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                      final pickedFile =
+                          await _picker.pickImage(source: ImageSource.gallery);
                       if (pickedFile != null) {
                         setState(() {
                           order.invoiceImageUrl = pickedFile.path;
@@ -232,7 +245,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text('Transaction Image:'),
                     SizedBox(height: 8),
                     _buildImageWidget(order.transactionImageUrl, () async {
-                      final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                      final pickedFile =
+                          await _picker.pickImage(source: ImageSource.gallery);
                       if (pickedFile != null) {
                         setState(() {
                           order.transactionImageUrl = pickedFile.path;
@@ -271,12 +285,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _updateOrder(
-      Order order,
-      String newAmount,
-      String newStatus,
-      String newUtrNumber,
-      String newClientNotes,
-      ) async {
+    Order order,
+    String newAmount,
+    String newStatus,
+    String newUtrNumber,
+    String newClientNotes,
+  ) async {
     // Update text fields
     order.amount = newAmount;
     order.status = newStatus;

@@ -2,13 +2,12 @@ import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.da
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:payment/settings_screen.dart';
+import 'package:payment/home_screen.dart';
 import 'package:quick_actions/quick_actions.dart';
 
 import 'package:payment/Create.dart';
-import 'package:payment/HomeScreen.dart';
+import 'package:payment/transaction_screen.dart';
 import 'package:payment/pay.dart';
-
 
 class KBottom extends StatefulWidget {
   final QuickActions quickActions;
@@ -56,18 +55,21 @@ class _KBottomState extends State<KBottom> {
           });
         },
         children: [
-          const HomeScreen(), // Replace with your Home screen widget
+          // Replace with your Home screen widget
+
+          HomeScreen(
+            quickActions: widget.quickActions, // Pass the QuickActions instance
+          ),
+          const TransactionScreen(),
           CreateOrderScreen(
             merchantName: _merchantName ?? '', // Pass default value if null
-            upiId: _upiId ?? '', // Pass default value if null
-          ),
-          SettingsScreen(
-            quickActions: widget.quickActions, // Pass the QuickActions instance
+            upiId: _upiId ?? '', amount: 1, // Pass default value if null
           ),
         ],
       ),
       bottomNavigationBar: AnimatedBottomNavigationBar(
-        backgroundColor: Colors.blue.withOpacity(0.50), // Update with your color
+        backgroundColor:
+            Colors.blue.withOpacity(0.50), // Update with your color
         elevation: 0,
         splashColor: Colors.green, // Update with your color
         icons: const [

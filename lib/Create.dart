@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:payment/HomeScreen.dart';
+import 'package:payment/transaction_screen.dart';
 import 'package:payment/pay.dart';
 import 'package:payment/qr.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -13,11 +13,13 @@ import 'package:qr_flutter/qr_flutter.dart';
 class CreateOrderScreen extends StatefulWidget {
   final String merchantName;
   final String upiId;
+  final double amount; // Added amount parameter
 
   const CreateOrderScreen({
     Key? key,
     required this.merchantName,
     required this.upiId,
+    required this.amount, // Added amount parameter
   }) : super(key: key);
 
   @override
@@ -44,6 +46,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     // Initialize with the passed parameters
     _merchantName = widget.merchantName;
     _upiId = widget.upiId;
+    _amountController.text =
+        widget.amount.toString(); // Initialize the amount controller
   }
 
   @override
@@ -60,8 +64,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     if (_upiId.isEmpty || _merchantName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text(
-                'UPI ID or Merchant Name is missing. Please configure it in settings.')),
+          content: Text(
+              'UPI ID or Merchant Name is missing. Please configure it in settings.'),
+        ),
       );
       return;
     }
@@ -101,13 +106,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           _invoiceImage = pickedFile.path;
         });
       } else {
-        // Handle the case when no image is selected
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No image selected')),
         );
       }
     } catch (e) {
-      // Log the error and show a snackbar
       if (!mounted) return; // Ensure the widget is still mounted
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -127,13 +130,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           _transactionImage = pickedFile.path;
         });
       } else {
-        // Handle the case when no image is selected
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No image selected')),
         );
       }
     } catch (e) {
-      // Log the error and show a snackbar
       if (!mounted) return; // Ensure the widget is still mounted
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -228,7 +229,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
+        MaterialPageRoute(builder: (context) => TransactionScreen()),
       );
     } catch (e) {
       print('Error: $e');

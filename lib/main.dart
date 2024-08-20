@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:payment/HomeScreen.dart';
+import 'package:payment/transaction_screen.dart';
 import 'package:payment/MainScreen.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'package:payment/Create.dart';
@@ -21,6 +21,10 @@ void main() async {
   Hive.registerAdapter(OrderAdapter());
   Hive.registerAdapter(SettingsAdapter());
   Hive.registerAdapter(ProductAdapter());
+
+  // await Hive.deleteBoxFromDisk('orders');
+  // await Hive.deleteBoxFromDisk('settings');
+  // await Hive.deleteBoxFromDisk('products');
 
   // Open boxes for orders, settings, and products
   await Hive.openBox<Order>('orders');
@@ -43,6 +47,8 @@ void main() async {
             builder: (context) => CreateOrderScreen(
               merchantName: settings.merchantName,
               upiId: settings.upiId,
+              amount:
+                  0, // Set default value or fetch from other sources if needed
             ),
           ),
         );
@@ -54,10 +60,29 @@ void main() async {
       final productsBox = Hive.box<Product>('products');
       final product = productsBox.get(productId);
 
-      if (product != null) {
+      // Fetch the settings associated with this product
+      final settingsBox = Hive.box<Settings>('settings');
+      final settings = settingsBox.values.firstWhere(
+        (s) => s.productIds.contains(productId),
+        orElse: () => Settings(
+            id: -1,
+            merchantName: '',
+            upiId: '',
+            color: 0,
+            createShortcut: false,
+            archived: false,
+            productIds: [],
+            currency: ''),
+      );
+
+      if (product != null && settings.id != -1) {
         navigatorKey.currentState?.push(
           MaterialPageRoute(
-            builder: (context) => HomeScreen(), // Assuming HomeScreen shows product details
+            builder: (context) => CreateOrderScreen(
+              merchantName: settings.merchantName,
+              upiId: settings.upiId,
+              amount: product.price,
+            ),
           ),
         );
       }
@@ -77,7 +102,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey, // Use the global key here
       debugShowCheckedModeBanner: false,
-      home: MainScreen(quickActions: quickActions), // Use MainScreen as the initial route
+      home: MainScreen(
+          quickActions: quickActions), // Use MainScreen as the initial route
     );
   }
 }

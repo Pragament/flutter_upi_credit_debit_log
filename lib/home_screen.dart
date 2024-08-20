@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:payment/Create.dart';
+import 'package:payment/utils.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:payment/pay.dart';
@@ -281,29 +282,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
 
     widget.quickActions.setShortcutItems(shortcuts);
-  }
-
-  String _formatUpiId(String upiId) {
-    if (upiId.length > 6) {
-      return 'xxxxxxx${upiId.substring(upiId.length - 6)}';
-    }
-    return upiId;
-  }
-
-  String _getInitials(String merchantName) {
-    if (merchantName.isEmpty) {
-      return 'NA'; // Default initials if merchant name is empty
-    }
-    final words =
-        merchantName.split(' ').where((word) => word.isNotEmpty).toList();
-    if (words.isEmpty) {
-      return 'NA'; // Default initials if no valid words are present
-    }
-    return words
-        .take(2)
-        .map((word) => word.isNotEmpty ? word[0] : '')
-        .join()
-        .toUpperCase();
   }
 
   void _manageProductQuickActions() {
@@ -642,7 +620,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (settings == null) {
                 return const SizedBox.shrink(); // or some placeholder widget
               }
-              final initials = _getInitials(settings.merchantName);
+              final initials = getInitials(settings.merchantName);
 
               return itemCard(context, settings, initials);
             },
@@ -700,7 +678,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               title: Text(settings.merchantName),
-              subtitle: Text(_formatUpiId(settings.upiId)),
+              subtitle: Text(formatUpiId(settings.upiId)),
               trailing: IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: () => _showForm(settings: settings),
@@ -737,120 +715,120 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
- GestureDetector productTile(Product? product, Settings settings, Function() refreshCallback) {
-  return GestureDetector(
-    onTap: () {
-      if (product != null) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => CreateOrderScreen(
-              merchantName: settings.merchantName,
-              upiId: settings.upiId,
-              amount: product.price, // Passing the product price as the amount
+  GestureDetector productTile(
+      Product? product, Settings settings, Function() refreshCallback) {
+    return GestureDetector(
+      onTap: () {
+        if (product != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => CreateOrderScreen(
+                merchantName: settings.merchantName,
+                upiId: settings.upiId,
+                amount:
+                    product.price, // Passing the product price as the amount
+              ),
             ),
-          ),
-        );
-      }
-    },
-    child: Container(
-      width: 220,
-      height: 120,
-      margin: const EdgeInsets.symmetric(horizontal: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product != null && product.name.isNotEmpty
-                            ? product.name
-                            : 'Unknown Product',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.0,
-                        ),
-                        textAlign: TextAlign.left,
-                      ),
-                      const SizedBox(height: 4.0),
-                      Text(
-                        product != null && product.price != null
-                            ? '₹${product.price.toString()}'
-                            : 'Price not available',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14.0,
-                        ),
-                        textAlign: TextAlign.left,
-                      ),
-                      const SizedBox(height: 4.0),
-                      Text(
-                        product != null && product.description.isNotEmpty
-                            ? product.description
-                            : 'No description available',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 14.0,
-                        ),
-                        textAlign: TextAlign.left,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8.0),
-                if (product != null && product.imageUrl.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8.0),
-                    child: product.imageUrl.startsWith('http')
-                        ? Image.network(
-                            product.imageUrl,
-                            height: 100,
-                            width: 100,
-                            fit: BoxFit.cover,
-                          )
-                        : Image.file(
-                            File(product.imageUrl),
-                            height: 100,
-                            width: 100,
-                            fit: BoxFit.cover,
+          );
+        }
+      },
+      child: Container(
+        width: 220,
+        height: 120,
+        margin: const EdgeInsets.symmetric(horizontal: 8.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product != null && product.name.isNotEmpty
+                              ? product.name
+                              : 'Unknown Product',
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.0,
                           ),
-                  )
-                else
-                  const Icon(Icons.category, color: Colors.grey, size: 100),
-              ],
+                          textAlign: TextAlign.left,
+                        ),
+                        const SizedBox(height: 4.0),
+                        Text(
+                          product != null && product.price != null
+                              ? '₹${product.price.toString()}'
+                              : 'Price not available',
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.0,
+                          ),
+                          textAlign: TextAlign.left,
+                        ),
+                        const SizedBox(height: 4.0),
+                        Text(
+                          product != null && product.description.isNotEmpty
+                              ? product.description
+                              : 'No description available',
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 14.0,
+                          ),
+                          textAlign: TextAlign.left,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8.0),
+                  if (product != null && product.imageUrl.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8.0),
+                      child: product.imageUrl.startsWith('http')
+                          ? Image.network(
+                              product.imageUrl,
+                              height: 100,
+                              width: 100,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.file(
+                              File(product.imageUrl),
+                              height: 100,
+                              width: 100,
+                              fit: BoxFit.cover,
+                            ),
+                    )
+                  else
+                    const Icon(Icons.category, color: Colors.grey, size: 100),
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: IconButton(
-              icon: const Icon(Icons.edit, color: Colors.grey),
-              onPressed: () {
-                if (product != null) {
-                  _showEditProductForm(context, product, settings, refreshCallback);
-                }
-              },
+            Positioned(
+              top: 0,
+              right: 0,
+              child: IconButton(
+                icon: const Icon(Icons.edit, color: Colors.grey),
+                onPressed: () {
+                  if (product != null) {
+                    _showEditProductForm(
+                        context, product, settings, refreshCallback);
+                  }
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
-
-
-
+    );
+  }
 }

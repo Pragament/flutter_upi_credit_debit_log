@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:payment/Create.dart';
+import 'package:payment/product_list_screen.dart';
 import 'package:payment/utils.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -238,18 +239,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
-  Future<void> _deleteArchivedAccounts() async {
-    final now = DateTime.now();
-    final itemsToDelete = settingsBox.values.where((settings) =>
-        settings.archived &&
-        settings.archiveDate != null &&
-        now.difference(settings.archiveDate!).inDays > 30);
-
-    for (final settings in itemsToDelete) {
-      await settings.delete();
-    }
-  }
-
   Future<void> _deleteSettings(Settings settings) async {
     await settings.delete();
     _manageQuickActions(); // Refresh the quick actions
@@ -264,10 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
         //icon: 'icon_add_order',
       ),
     ]);
-  }
-
-  void _removeQuickAction(Settings settings) {
-    widget.quickActions.clearShortcutItems();
   }
 
   void _manageQuickActions() {
@@ -465,7 +450,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _createProductQuickAction(Product product) {
-    final QuickActions quickActions = QuickActions();
+    const QuickActions quickActions = QuickActions();
     quickActions.setShortcutItems([
       ShortcutItem(
         type: 'view_product_${product.id}',
@@ -600,6 +585,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // void _removeQuickAction(Settings settings) {
+  //   widget.quickActions.clearShortcutItems();
+  // }
+
+  void _refresh() {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -622,7 +615,7 @@ class _HomeScreenState extends State<HomeScreen> {
               }
               final initials = getInitials(settings.merchantName);
 
-              return itemCard(context, settings, initials);
+              return itemCard(context, settings, initials, productBox);
             },
           );
         },
@@ -630,13 +623,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Container itemCard(BuildContext context, Settings settings, String initials) {
+  Container itemCard(BuildContext context, Settings settings, String initials,
+      var productBox) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Card containing the leading, title, subtitle, and trailing
           Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12.0),
@@ -685,13 +678,31 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showAddProductForm(context, settings),
-            padding: const EdgeInsets.all(8.0),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () => _showAddProductForm(context, settings),
+                padding: const EdgeInsets.all(8.0),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ProductListScreen(
+                        settings: settings,
+                        productBox: productBox,
+                        showEditProductForm: _showEditProductForm,
+                        refreshHomeScreen: _refresh,
+                      ),
+                    ),
+                  );
+                },
+                padding: const EdgeInsets.all(8.0),
+              ),
+            ],
           ),
-          // Container for displaying the products
           SizedBox(
             height: 110, // Adjust the height to avoid overflow
             child: ListView.builder(
@@ -701,15 +712,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 final productId = settings.productIds[index];
                 final product = productBox.get(productId);
 
-                // Pass the third argument as a callback to refresh the state
                 return productTile(product, settings, () {
                   setState(() {});
                 });
               },
             ),
           ),
-
-          // Add product button
         ],
       ),
     );
@@ -764,7 +772,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 4.0),
                         Text(
-                          product != null && product.price != null
+                          product != null
                               ? '₹${product.price.toString()}'
                               : 'Price not available',
                           style: const TextStyle(

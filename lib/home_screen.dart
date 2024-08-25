@@ -28,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _createShortcut = false;
   final TextEditingController _searchController = TextEditingController();
   final ValueNotifier<String> _searchQueryNotifier = ValueNotifier<String>('');
+  bool _isAscending = true;
 
   @override
   void initState() {
@@ -46,6 +47,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _upiIdController.dispose();
     _currencyController.dispose();
     super.dispose();
+  }
+
+  void _toggleSortOrder() {
+    setState(() {
+      _isAscending = !_isAscending;
+    });
   }
 
   void _onSearchChanged(String query) {
@@ -592,6 +599,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       Navigator.of(context).pop();
                     }
+                    _refresh();
                   },
                   child: const Text('Save'),
                 ),
@@ -618,6 +626,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
+        actions: [
+          IconButton(
+            icon:
+                Icon(_isAscending ? Icons.arrow_upward : Icons.arrow_downward),
+            onPressed: _toggleSortOrder,
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56.0),
           child: Padding(
@@ -646,8 +661,19 @@ class _HomeScreenState extends State<HomeScreen> {
         valueListenable:
             _searchQueryNotifier, // Notifier to rebuild UI on search query change
         builder: (context, searchQuery, _) {
-          final filteredAccounts =
-              _filterAccounts(accountsBox.values.toList(), searchQuery);
+          // Convert the Hive box values to a list
+          final accountsList = accountsBox.values.toList();
+
+          // Sort the list based on merchant name and the current sorting order
+          accountsList.sort((a, b) {
+            int compareResult = a.merchantName
+                .toLowerCase()
+                .compareTo(b.merchantName.toLowerCase());
+            return _isAscending ? compareResult : -compareResult;
+          });
+
+          // Filter the sorted list based on the search query
+          final filteredAccounts = _filterAccounts(accountsList, searchQuery);
 
           return ListView.builder(
             itemCount: filteredAccounts.length,

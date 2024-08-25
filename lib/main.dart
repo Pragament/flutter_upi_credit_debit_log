@@ -32,64 +32,64 @@ void main() async {
   await Hive.openBox<Product>('products');
 
   // Initialize Quick Actions
-  final QuickActions quickActions = QuickActions();
+  const QuickActions quickActions = QuickActions();
   quickActions.initialize((String shortcutType) {
-    if (shortcutType.startsWith('create_order_')) {
-      final accountId = int.parse(shortcutType.split('_').last);
+  if (shortcutType.startsWith('create_order_')) {
+    final accountId = int.parse(shortcutType.split('_').last);
 
-      // Fetch the actual accounts for the given accountId
-      final accountsBox = Hive.box<Accounts>('accounts');
-      final accounts = accountsBox.get(accountId);
+    // Fetch the actual account for the given accountId
+    final accountsBox = Hive.box<Accounts>('accounts');
+    final accounts = accountsBox.get(accountId);
 
-      if (accounts != null) {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => CreateOrderScreen(
-              merchantName: accounts.merchantName,
-              upiId: accounts.upiId,
-              amount:
-                  0, // Set default value or fetch from other sources if needed
-            ),
+    if (accounts != null) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => CreateOrderScreen(
+            merchantName: accounts.merchantName,
+            upiId: accounts.upiId,
+            amount: 0, // Default or fetched value
           ),
-        );
-      }
-    } else if (shortcutType.startsWith('view_product_')) {
-      final productId = int.parse(shortcutType.split('_').last);
-
-      // Fetch the actual product for the given productId
-      final productsBox = Hive.box<Product>('products');
-      final product = productsBox.get(productId);
-
-      // Fetch the accounts associated with this product
-      final accountsBox = Hive.box<Accounts>('accounts');
-      final accounts = accountsBox.values.firstWhere(
-        (s) => s.productIds.contains(productId),
-        orElse: () => Accounts(
-            id: -1,
-            merchantName: '',
-            upiId: '',
-            color: 0,
-            createShortcut: false,
-            archived: false,
-            productIds: [],
-            currency: ''),
+        ),
       );
-
-      if (product != null && accounts.id != -1) {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => CreateOrderScreen(
-              merchantName: accounts.merchantName,
-              upiId: accounts.upiId,
-              amount: product.price,
-            ),
-          ),
-        );
-      }
     }
-  });
+  } else if (shortcutType.startsWith('view_product_')) {
+    final productId = int.parse(shortcutType.split('_').last);
 
-  runApp(MyApp(quickActions: quickActions));
+    // Fetch the actual product for the given productId
+    final productsBox = Hive.box<Product>('products');
+    final product = productsBox.get(productId);
+
+    // Fetch the accounts associated with this product
+    final accountsBox = Hive.box<Accounts>('accounts');
+    final accounts = accountsBox.values.firstWhere(
+      (s) => s.productIds.contains(productId),
+      orElse: () => Accounts(
+          id: -1,
+          merchantName: '',
+          upiId: '',
+          color: 0,
+          createShortcut: false,
+          archived: false,
+          productIds: [],
+          currency: ''),
+    );
+
+    if (product != null && accounts.id != -1) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => CreateOrderScreen(
+            merchantName: accounts.merchantName,
+            upiId: accounts.upiId,
+            amount: product.price,
+          ),
+        ),
+      );
+    }
+  }
+});
+
+
+  runApp(const MyApp(quickActions: quickActions));
 }
 
 class MyApp extends StatelessWidget {

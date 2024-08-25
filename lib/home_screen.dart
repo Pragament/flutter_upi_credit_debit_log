@@ -37,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
     accountsBox = Hive.box<Accounts>('accounts');
     productBox = Hive.box<Product>('products');
     _manageQuickActions(); // Initialize quick actions on startup
-    _manageProductQuickActions(); // Initialize product quick actions
+    // _manageProductQuickActions(); // Initialize product quick actions
   }
 
   @override
@@ -284,7 +284,8 @@ class _HomeScreenState extends State<HomeScreen> {
     account.productIds.remove(product.id);
     await account.save(); // Save the updated account object
 
-    _manageProductQuickActions(); // Refresh the quick actions
+    //_manageProductQuickActions(); // Refresh the quick actions
+    _manageQuickActions();
     setState(() {});
   }
 
@@ -299,7 +300,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _manageQuickActions() {
-    final shortcuts = Hive.box<Accounts>('accounts')
+    // Fetch quick actions for accounts
+    final accountShortcuts = Hive.box<Accounts>('accounts')
         .values
         .where((accounts) => accounts.createShortcut)
         .map((accounts) {
@@ -309,19 +311,20 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }).toList();
 
-    widget.quickActions.setShortcutItems(shortcuts);
-  }
-
-  void _manageProductQuickActions() {
-    final products = Hive.box<Product>('products').values.toList();
-    final shortcuts = products.map((product) {
+    // Fetch quick actions for products
+    final productShortcuts =
+        Hive.box<Product>('products').values.map((product) {
       return ShortcutItem(
         type: 'view_product_${product.id}',
         localizedTitle: 'View Product ${product.name}',
       );
     }).toList();
 
-    widget.quickActions.setShortcutItems(shortcuts);
+    // Combine both lists of shortcuts
+    final combinedShortcuts = [...accountShortcuts, ...productShortcuts];
+
+    // Set all shortcuts at once
+    widget.quickActions.setShortcutItems(combinedShortcuts);
   }
 
   void _showEditProductForm(BuildContext context, Product product,
@@ -470,10 +473,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (createProdShortcut) {
                         product.createShortcut = true;
                         _createProductQuickAction(product);
-                        _manageProductQuickActions();
+                        //_manageProductQuickActions();
+                        _manageQuickActions();
                       } else {
                         product.createShortcut = false;
-                        _manageProductQuickActions();
+                        // _manageProductQuickActions();
+                        _manageQuickActions();
                       }
 
                       refreshCallback(); // Trigger the refresh in the parent widget

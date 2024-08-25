@@ -26,6 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _upiIdController = TextEditingController();
   final TextEditingController _currencyController = TextEditingController();
   bool _createShortcut = false;
+  final TextEditingController _searchController = TextEditingController();
+  final ValueNotifier<String> _searchQueryNotifier = ValueNotifier<String>('');
 
   @override
   void initState() {
@@ -34,6 +36,28 @@ class _HomeScreenState extends State<HomeScreen> {
     productBox = Hive.box<Product>('products');
     _manageQuickActions(); // Initialize quick actions on startup
     _manageProductQuickActions(); // Initialize product quick actions
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchQueryNotifier.dispose();
+    _merchantNameController.dispose();
+    _upiIdController.dispose();
+    _currencyController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    _searchQueryNotifier.value = query;
+  }
+
+  List<Accounts> _filterAccounts(List<Accounts> accountsList, String query) {
+    if (query.isEmpty) return accountsList;
+    return accountsList.where((account) {
+      return account.merchantName.toLowerCase().contains(query.toLowerCase()) ||
+          account.upiId.toLowerCase().contains(query.toLowerCase());
+    }).toList();
   }
 
   void _showForm({Accounts? accounts}) {
@@ -585,10 +609,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // void _removeQuickAction(accounts accounts) {
-  //   widget.quickActions.clearShortcutItems();
-  // }
-
   void _refresh() {
     setState(() {});
   }
@@ -598,24 +618,45 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56.0),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search Accounts',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+              ),
+              onChanged:
+                  _onSearchChanged, // Update search query when user types
+            ),
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showForm(),
+        onPressed: () =>
+            _showForm(), // Function to show form to add accounts or products
         child: const Icon(Icons.add),
       ),
-      body: ValueListenableBuilder<Box<Accounts>>(
-        valueListenable: Hive.box<Accounts>('accounts').listenable(),
-        builder: (context, box, _) {
-          return ListView.builder(
-            itemCount: box.values.length,
-            itemBuilder: (context, index) {
-              final accounts = box.getAt(index);
-              if (accounts == null) {
-                return const SizedBox.shrink(); // or some placeholder widget
-              }
-              final initials = getInitials(accounts.merchantName);
+      body: ValueListenableBuilder(
+        valueListenable:
+            _searchQueryNotifier, // Notifier to rebuild UI on search query change
+        builder: (context, searchQuery, _) {
+          final filteredAccounts =
+              _filterAccounts(accountsBox.values.toList(), searchQuery);
 
-              return itemCard(context, accounts, initials, productBox);
+          return ListView.builder(
+            itemCount: filteredAccounts.length,
+            itemBuilder: (context, index) {
+              // Display accounts that match the search query
+              final account = filteredAccounts[index];
+              final initials = getInitials(account.merchantName);
+
+              return itemCard(context, account, initials, productBox);
             },
           );
         },

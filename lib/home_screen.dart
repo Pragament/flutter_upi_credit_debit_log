@@ -29,6 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ValueNotifier<String> _searchQueryNotifier = ValueNotifier<String>('');
   bool _isAscending = true;
+  bool _showArchived = false; // Add this state variable
+
 
   @override
   void initState() {
@@ -621,74 +623,83 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-        actions: [
-          IconButton(
-            icon:
-                Icon(_isAscending ? Icons.arrow_upward : Icons.arrow_downward),
-            onPressed: _toggleSortOrder,
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56.0),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search Accounts',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Home'),
+      actions: [
+        IconButton(
+          icon: Icon(_isAscending ? Icons.arrow_upward : Icons.arrow_downward),
+          onPressed: _toggleSortOrder,
+        ),
+        // Add a toggle switch for filtering archived accounts
+        IconButton(
+          icon: Icon(_showArchived ? Icons.archive : Icons.archive_outlined),
+          onPressed: () {
+            setState(() {
+              _showArchived = !_showArchived; // Toggle the archived view state
+            });
+          },
+        ),
+      ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(56.0),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search Accounts',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.0),
               ),
-              onChanged:
-                  _onSearchChanged, // Update search query when user types
             ),
+            onChanged: _onSearchChanged,
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () =>
-            _showForm(), // Function to show form to add accounts or products
-        child: const Icon(Icons.add),
-      ),
-      body: ValueListenableBuilder(
-        valueListenable:
-            _searchQueryNotifier, // Notifier to rebuild UI on search query change
-        builder: (context, searchQuery, _) {
-          // Convert the Hive box values to a list
-          final accountsList = accountsBox.values.toList();
+    ),
+    floatingActionButton: FloatingActionButton(
+      onPressed: () => _showForm(),
+      child: const Icon(Icons.add),
+    ),
+    body: ValueListenableBuilder(
+      valueListenable: _searchQueryNotifier,
+      builder: (context, searchQuery, _) {
+        final accountsList = accountsBox.values.toList();
 
-          // Sort the list based on merchant name and the current sorting order
-          accountsList.sort((a, b) {
-            int compareResult = a.merchantName
-                .toLowerCase()
-                .compareTo(b.merchantName.toLowerCase());
-            return _isAscending ? compareResult : -compareResult;
-          });
+        // Sort the list based on merchant name and the current sorting order
+        accountsList.sort((a, b) {
+          int compareResult = a.merchantName
+              .toLowerCase()
+              .compareTo(b.merchantName.toLowerCase());
+          return _isAscending ? compareResult : -compareResult;
+        });
 
-          // Filter the sorted list based on the search query
-          final filteredAccounts = _filterAccounts(accountsList, searchQuery);
+        // Filter the sorted list based on the search query and archived status
+        final filteredAccounts = _filterAccounts(accountsList, searchQuery).where((account) {
+          if (_showArchived) {
+            return account.archived; // Show only archived accounts if toggle is on
+          } else {
+            return !account.archived; // Show only non-archived accounts if toggle is off
+          }
+        }).toList();
 
-          return ListView.builder(
-            itemCount: filteredAccounts.length,
-            itemBuilder: (context, index) {
-              // Display accounts that match the search query
-              final account = filteredAccounts[index];
-              final initials = getInitials(account.merchantName);
+        return ListView.builder(
+          itemCount: filteredAccounts.length,
+          itemBuilder: (context, index) {
+            final account = filteredAccounts[index];
+            final initials = getInitials(account.merchantName);
 
-              return itemCard(context, account, initials, productBox);
-            },
-          );
-        },
-      ),
-    );
-  }
+            return itemCard(context, account, initials, productBox);
+          },
+        );
+      },
+    ),
+  );
+}
 
   Container itemCard(BuildContext context, Accounts accounts, String initials,
       var productBox) {

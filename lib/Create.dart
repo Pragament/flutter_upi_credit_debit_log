@@ -65,7 +65,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              'UPI ID or Merchant Name is missing. Please configure it in settings.'),
+              'UPI ID or Merchant Name is missing. Please configure it in accounts.'),
         ),
       );
       return;

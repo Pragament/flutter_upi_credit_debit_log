@@ -29,17 +29,17 @@ class _KBottomState extends State<KBottom> {
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    _loadaccounts();
   }
 
-  Future<void> _loadSettings() async {
-    final settingsBox = Hive.box<Settings>('settings');
-    final settings = settingsBox.get(0);
+  Future<void> _loadaccounts() async {
+    final accountsBox = Hive.box<Accounts>('accounts');
+    final accounts = accountsBox.get(0);
 
-    if (settings != null) {
+    if (accounts != null) {
       setState(() {
-        _merchantName = settings.merchantName;
-        _upiId = settings.upiId;
+        _merchantName = accounts.merchantName;
+        _upiId = accounts.upiId;
       });
     }
   }

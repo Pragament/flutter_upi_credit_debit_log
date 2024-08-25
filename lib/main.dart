@@ -19,16 +19,16 @@ void main() async {
   await Hive.initFlutter(appDocumentDir.path);
 
   Hive.registerAdapter(OrderAdapter());
-  Hive.registerAdapter(SettingsAdapter());
+  Hive.registerAdapter(AccountsAdapter());
   Hive.registerAdapter(ProductAdapter());
 
   // await Hive.deleteBoxFromDisk('orders');
-  // await Hive.deleteBoxFromDisk('settings');
+  // await Hive.deleteBoxFromDisk('accounts');
   // await Hive.deleteBoxFromDisk('products');
 
-  // Open boxes for orders, settings, and products
+  // Open boxes for orders, accounts, and products
   await Hive.openBox<Order>('orders');
-  await Hive.openBox<Settings>('settings');
+  await Hive.openBox<Accounts>('accounts');
   await Hive.openBox<Product>('products');
 
   // Initialize Quick Actions
@@ -37,16 +37,16 @@ void main() async {
     if (shortcutType.startsWith('create_order_')) {
       final accountId = int.parse(shortcutType.split('_').last);
 
-      // Fetch the actual settings for the given accountId
-      final settingsBox = Hive.box<Settings>('settings');
-      final settings = settingsBox.get(accountId);
+      // Fetch the actual accounts for the given accountId
+      final accountsBox = Hive.box<Accounts>('accounts');
+      final accounts = accountsBox.get(accountId);
 
-      if (settings != null) {
+      if (accounts != null) {
         navigatorKey.currentState?.push(
           MaterialPageRoute(
             builder: (context) => CreateOrderScreen(
-              merchantName: settings.merchantName,
-              upiId: settings.upiId,
+              merchantName: accounts.merchantName,
+              upiId: accounts.upiId,
               amount:
                   0, // Set default value or fetch from other sources if needed
             ),
@@ -60,11 +60,11 @@ void main() async {
       final productsBox = Hive.box<Product>('products');
       final product = productsBox.get(productId);
 
-      // Fetch the settings associated with this product
-      final settingsBox = Hive.box<Settings>('settings');
-      final settings = settingsBox.values.firstWhere(
+      // Fetch the accounts associated with this product
+      final accountsBox = Hive.box<Accounts>('accounts');
+      final accounts = accountsBox.values.firstWhere(
         (s) => s.productIds.contains(productId),
-        orElse: () => Settings(
+        orElse: () => Accounts(
             id: -1,
             merchantName: '',
             upiId: '',
@@ -75,12 +75,12 @@ void main() async {
             currency: ''),
       );
 
-      if (product != null && settings.id != -1) {
+      if (product != null && accounts.id != -1) {
         navigatorKey.currentState?.push(
           MaterialPageRoute(
             builder: (context) => CreateOrderScreen(
-              merchantName: settings.merchantName,
-              upiId: settings.upiId,
+              merchantName: accounts.merchantName,
+              upiId: accounts.upiId,
               amount: product.price,
             ),
           ),

@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
- // For getting application documents directory
+// For getting application documents directory
 
 part 'pay.g.dart';
 
@@ -34,7 +34,7 @@ class Order extends HiveObject {
 }
 
 @HiveType(typeId: 1)
-class Settings extends HiveObject {
+class Accounts extends HiveObject {
   @HiveField(0)
   late int id;
 
@@ -57,12 +57,13 @@ class Settings extends HiveObject {
   late bool archived; // New field to indicate if the account is archived
 
   @HiveField(7)
-  DateTime? archiveDate; // New field to store the date when the account was archived
+  DateTime?
+      archiveDate; // New field to store the date when the account was archived
 
   @HiveField(8)
   late List<int> productIds; // List of product IDs
 
-  Settings({
+  Accounts({
     required this.id,
     required this.merchantName,
     required this.upiId,
@@ -74,6 +75,7 @@ class Settings extends HiveObject {
     required this.productIds,
   });
 }
+
 @HiveType(typeId: 2)
 class Product extends HiveObject {
   @HiveField(0)
@@ -111,4 +113,3 @@ class Product extends HiveObject {
     this.createShortcut = false, // Default value
   });
 }
-

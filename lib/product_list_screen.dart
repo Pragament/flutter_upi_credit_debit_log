@@ -6,15 +6,15 @@ import 'package:payment/Create.dart';
 import 'package:payment/pay.dart';
 
 class ProductListScreen extends StatefulWidget {
-  final Settings settings;
+  final Accounts accounts;
   final Box<Product> productBox;
-  final Function(BuildContext, Product, Settings, Function())
+  final Function(BuildContext, Product, Accounts, Function())
       showEditProductForm;
   final Function() refreshHomeScreen; // New callback to refresh HomeScreen
 
   const ProductListScreen({
     Key? key,
-    required this.settings,
+    required this.accounts,
     required this.productBox,
     required this.showEditProductForm,
     required this.refreshHomeScreen, // Accept the callback
@@ -34,30 +34,30 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.settings.merchantName} Products'),
+        title: Text('${widget.accounts.merchantName} Products'),
       ),
       body: ListView.builder(
-        itemCount: widget.settings.productIds.length,
+        itemCount: widget.accounts.productIds.length,
         itemBuilder: (context, index) {
-          final productId = widget.settings.productIds[index];
+          final productId = widget.accounts.productIds[index];
           final product = widget.productBox.get(productId);
 
-          return _buildProductTile(context, product, widget.settings);
+          return _buildProductTile(context, product, widget.accounts);
         },
       ),
     );
   }
 
   GestureDetector _buildProductTile(
-      BuildContext context, Product? product, Settings settings) {
+      BuildContext context, Product? product, Accounts accounts) {
     return GestureDetector(
       onTap: () {
         if (product != null) {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => CreateOrderScreen(
-                merchantName: settings.merchantName,
-                upiId: settings.upiId,
+                merchantName: accounts.merchantName,
+                upiId: accounts.upiId,
                 amount: product.price,
               ),
             ),
@@ -142,7 +142,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               onPressed: () {
                 if (product != null) {
                   widget.showEditProductForm(
-                      context, product, settings, _refresh);
+                      context, product, accounts, _refresh);
                 }
               },
             ),

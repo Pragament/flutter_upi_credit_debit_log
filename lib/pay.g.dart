@@ -63,17 +63,17 @@ class OrderAdapter extends TypeAdapter<Order> {
           typeId == other.typeId;
 }
 
-class SettingsAdapter extends TypeAdapter<Settings> {
+class AccountsAdapter extends TypeAdapter<Accounts> {
   @override
   final int typeId = 1;
 
   @override
-  Settings read(BinaryReader reader) {
+  Accounts read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Settings(
+    return Accounts(
       id: fields[0] as int,
       merchantName: fields[1] as String,
       upiId: fields[2] as String,
@@ -87,7 +87,7 @@ class SettingsAdapter extends TypeAdapter<Settings> {
   }
 
   @override
-  void write(BinaryWriter writer, Settings obj) {
+  void write(BinaryWriter writer, Accounts obj) {
     writer
       ..writeByte(9)
       ..writeByte(0)
@@ -116,7 +116,7 @@ class SettingsAdapter extends TypeAdapter<Settings> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is SettingsAdapter &&
+      other is AccountsAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

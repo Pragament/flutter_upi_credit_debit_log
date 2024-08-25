@@ -19,7 +19,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Box<Settings> settingsBox;
+  late Box<Accounts> accountsBox;
   late Box<Product> productBox;
   Color _selectedColor = Colors.blue;
   final TextEditingController _merchantNameController = TextEditingController();
@@ -30,19 +30,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    settingsBox = Hive.box<Settings>('settings');
+    accountsBox = Hive.box<Accounts>('accounts');
     productBox = Hive.box<Product>('products');
     _manageQuickActions(); // Initialize quick actions on startup
     _manageProductQuickActions(); // Initialize product quick actions
   }
 
-  void _showForm({Settings? settings}) {
-    if (settings != null) {
-      _merchantNameController.text = settings.merchantName;
-      _upiIdController.text = settings.upiId;
-      _currencyController.text = settings.currency;
-      _selectedColor = Color(settings.color);
-      _createShortcut = settings.createShortcut;
+  void _showForm({Accounts? accounts}) {
+    if (accounts != null) {
+      _merchantNameController.text = accounts.merchantName;
+      _upiIdController.text = accounts.upiId;
+      _currencyController.text = accounts.currency;
+      _selectedColor = Color(accounts.color);
+      _createShortcut = accounts.createShortcut;
     } else {
       _merchantNameController.clear();
       _upiIdController.clear();
@@ -51,8 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _createShortcut = false;
     }
 
-    final bool isArchived = settings?.archived ?? false;
-    final DateTime? archiveDate = settings?.archiveDate;
+    final bool isArchived = accounts?.archived ?? false;
+    final DateTime? archiveDate = accounts?.archiveDate;
     final bool isDeletable = !isArchived ||
         (archiveDate != null &&
             DateTime.now().difference(archiveDate).inDays >= 30);
@@ -60,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(settings == null ? 'Add Settings' : 'Edit Settings'),
+        title: Text(accounts == null ? 'Add accounts' : 'Edit accounts'),
         content: StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Column(
@@ -109,16 +109,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Text('Create Shortcut'),
                   ],
                 ),
-                if (settings != null) ...[
+                if (accounts != null) ...[
                   const SizedBox(height: 16.0),
                   Row(
                     children: [
                       Checkbox(
-                        value: settings.archived,
+                        value: accounts.archived,
                         onChanged: (value) {
                           setState(() {
-                            settings.archived = value!;
-                            settings.archiveDate =
+                            accounts.archived = value!;
+                            accounts.archiveDate =
                                 value ? DateTime.now() : null;
                           });
                         },
@@ -136,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
-          settings != null
+          accounts != null
               ? TextButton(
                   onPressed: () {
                     if (!isDeletable) {
@@ -147,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     } else {
-                      _deleteSettings(settings);
+                      _deleteaccounts(accounts);
                     }
                     Navigator.of(context).pop();
                   },
@@ -164,10 +164,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
           TextButton(
             onPressed: () {
-              if (settings == null) {
-                _addSettings();
+              if (accounts == null) {
+                _addaccounts();
               } else {
-                _updateSettings(settings);
+                _updateaccounts(accounts);
               }
               Navigator.of(context).pop();
             },
@@ -200,9 +200,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _addSettings() async {
-    final id = settingsBox.isEmpty ? 0 : settingsBox.values.last.id + 1;
-    final settings = Settings(
+  Future<void> _addaccounts() async {
+    final id = accountsBox.isEmpty ? 0 : accountsBox.values.last.id + 1;
+    final accounts = Accounts(
       id: id,
       merchantName: _merchantNameController.text,
       upiId: _upiIdController.text,
@@ -213,56 +213,56 @@ class _HomeScreenState extends State<HomeScreen> {
       productIds: [],
     );
 
-    await settingsBox.put(id, settings);
+    await accountsBox.put(id, accounts);
     if (_createShortcut) {
-      _createQuickAction(settings);
+      _createQuickAction(accounts);
     }
     _manageQuickActions(); // Refresh the quick actions
     setState(() {});
   }
 
-  Future<void> _updateSettings(Settings settings) async {
-    settings.merchantName = _merchantNameController.text;
-    settings.upiId = _upiIdController.text;
-    settings.currency = _currencyController.text;
-    settings.color = _selectedColor.value;
-    settings.createShortcut = _createShortcut;
+  Future<void> _updateaccounts(Accounts accounts) async {
+    accounts.merchantName = _merchantNameController.text;
+    accounts.upiId = _upiIdController.text;
+    accounts.currency = _currencyController.text;
+    accounts.color = _selectedColor.value;
+    accounts.createShortcut = _createShortcut;
 
-    if (settings.archived == false) {
-      settings.archiveDate = null;
-    } else if (settings.archived) {
-      settings.archiveDate = DateTime.now();
+    if (accounts.archived == false) {
+      accounts.archiveDate = null;
+    } else if (accounts.archived) {
+      accounts.archiveDate = DateTime.now();
     }
 
-    await settings.save();
+    await accounts.save();
     _manageQuickActions(); // Refresh the quick actions
     setState(() {});
   }
 
-  Future<void> _deleteSettings(Settings settings) async {
-    await settings.delete();
+  Future<void> _deleteaccounts(Accounts accounts) async {
+    await accounts.delete();
     _manageQuickActions(); // Refresh the quick actions
     setState(() {});
   }
 
-  void _createQuickAction(Settings settings) {
+  void _createQuickAction(Accounts accounts) {
     widget.quickActions.setShortcutItems(<ShortcutItem>[
       ShortcutItem(
-        type: 'create_order_${settings.id}',
-        localizedTitle: 'Create Order for ${settings.merchantName}',
+        type: 'create_order_${accounts.id}',
+        localizedTitle: 'Create Order for ${accounts.merchantName}',
         //icon: 'icon_add_order',
       ),
     ]);
   }
 
   void _manageQuickActions() {
-    final shortcuts = Hive.box<Settings>('settings')
+    final shortcuts = Hive.box<Accounts>('accounts')
         .values
-        .where((settings) => settings.createShortcut)
-        .map((settings) {
+        .where((accounts) => accounts.createShortcut)
+        .map((accounts) {
       return ShortcutItem(
-        type: 'create_order_${settings.id}',
-        localizedTitle: 'Create Order for ${settings.merchantName}',
+        type: 'create_order_${accounts.id}',
+        localizedTitle: 'Create Order for ${accounts.merchantName}',
       );
     }).toList();
 
@@ -282,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showEditProductForm(BuildContext context, Product product,
-      Settings settings, Function() refreshCallback) {
+      Accounts accounts, Function() refreshCallback) {
     final TextEditingController productNameController =
         TextEditingController(text: product.name);
     final TextEditingController productDescriptionController =
@@ -459,7 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
   }
 
-  void _showAddProductForm(BuildContext context, Settings settings) {
+  void _showAddProductForm(BuildContext context, Accounts accounts) {
     final TextEditingController productNameController = TextEditingController();
     final TextEditingController productDescriptionController =
         TextEditingController();
@@ -561,10 +561,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       // Save the product to the Hive box
                       productBox.put(newProductId, newProduct);
 
-                      // Update the settings with the new product ID
-                      settings.productIds.add(newProductId);
-                      Hive.box<Settings>('settings')
-                          .put(settings.key, settings);
+                      // Update the accounts with the new product ID
+                      accounts.productIds.add(newProductId);
+                      Hive.box<Accounts>('accounts')
+                          .put(accounts.key, accounts);
 
                       Navigator.of(context).pop();
                     }
@@ -585,7 +585,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // void _removeQuickAction(Settings settings) {
+  // void _removeQuickAction(accounts accounts) {
   //   widget.quickActions.clearShortcutItems();
   // }
 
@@ -603,19 +603,19 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () => _showForm(),
         child: const Icon(Icons.add),
       ),
-      body: ValueListenableBuilder<Box<Settings>>(
-        valueListenable: Hive.box<Settings>('settings').listenable(),
+      body: ValueListenableBuilder<Box<Accounts>>(
+        valueListenable: Hive.box<Accounts>('accounts').listenable(),
         builder: (context, box, _) {
           return ListView.builder(
             itemCount: box.values.length,
             itemBuilder: (context, index) {
-              final settings = box.getAt(index);
-              if (settings == null) {
+              final accounts = box.getAt(index);
+              if (accounts == null) {
                 return const SizedBox.shrink(); // or some placeholder widget
               }
-              final initials = getInitials(settings.merchantName);
+              final initials = getInitials(accounts.merchantName);
 
-              return itemCard(context, settings, initials, productBox);
+              return itemCard(context, accounts, initials, productBox);
             },
           );
         },
@@ -623,7 +623,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Container itemCard(BuildContext context, Settings settings, String initials,
+  Container itemCard(BuildContext context, Accounts accounts, String initials,
       var productBox) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
@@ -640,8 +640,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => CreateOrderScreen(
-                      merchantName: settings.merchantName,
-                      upiId: settings.upiId,
+                      merchantName: accounts.merchantName,
+                      upiId: accounts.upiId,
                       amount: 1,
                     ),
                   ),
@@ -653,7 +653,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 50,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(settings.color),
+                  color: Color(accounts.color),
                   border: Border.all(
                     color: Colors.white,
                     width: 2,
@@ -670,11 +670,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              title: Text(settings.merchantName),
-              subtitle: Text(formatUpiId(settings.upiId)),
+              title: Text(accounts.merchantName),
+              subtitle: Text(formatUpiId(accounts.upiId)),
               trailing: IconButton(
                 icon: const Icon(Icons.edit),
-                onPressed: () => _showForm(settings: settings),
+                onPressed: () => _showForm(accounts: accounts),
               ),
             ),
           ),
@@ -682,7 +682,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.add),
-                onPressed: () => _showAddProductForm(context, settings),
+                onPressed: () => _showAddProductForm(context, accounts),
                 padding: const EdgeInsets.all(8.0),
               ),
               IconButton(
@@ -691,7 +691,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => ProductListScreen(
-                        settings: settings,
+                        accounts: accounts,
                         productBox: productBox,
                         showEditProductForm: _showEditProductForm,
                         refreshHomeScreen: _refresh,
@@ -707,12 +707,12 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 110, // Adjust the height to avoid overflow
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: settings.productIds.length,
+              itemCount: accounts.productIds.length,
               itemBuilder: (context, index) {
-                final productId = settings.productIds[index];
+                final productId = accounts.productIds[index];
                 final product = productBox.get(productId);
 
-                return productTile(product, settings, () {
+                return productTile(product, accounts, () {
                   setState(() {});
                 });
               },
@@ -724,15 +724,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   GestureDetector productTile(
-      Product? product, Settings settings, Function() refreshCallback) {
+      Product? product, Accounts accounts, Function() refreshCallback) {
     return GestureDetector(
       onTap: () {
         if (product != null) {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => CreateOrderScreen(
-                merchantName: settings.merchantName,
-                upiId: settings.upiId,
+                merchantName: accounts.merchantName,
+                upiId: accounts.upiId,
                 amount:
                     product.price, // Passing the product price as the amount
               ),
@@ -829,7 +829,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () {
                   if (product != null) {
                     _showEditProductForm(
-                        context, product, settings, refreshCallback);
+                        context, product, accounts, refreshCallback);
                   }
                 },
               ),

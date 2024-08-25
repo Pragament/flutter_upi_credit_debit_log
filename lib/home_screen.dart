@@ -31,7 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isAscending = true;
   bool _showArchived = false; // Add this state variable
 
-
   @override
   void initState() {
     super.initState();
@@ -278,6 +277,17 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
+  Future<void> _deleteproducts(Product product, Accounts account) async {
+    await product.delete();
+
+    // Update the accounts product list to remove the deleted product ID
+    account.productIds.remove(product.id);
+    await account.save(); // Save the updated account object
+
+    _manageProductQuickActions(); // Refresh the quick actions
+    setState(() {});
+  }
+
   void _createQuickAction(Accounts accounts) {
     widget.quickActions.setShortcutItems(<ShortcutItem>[
       ShortcutItem(
@@ -327,6 +337,10 @@ class _HomeScreenState extends State<HomeScreen> {
     bool createProdShortcut = product.createShortcut;
     bool isArchived = product.archived;
     DateTime? archiveDate = product.archiveDate;
+
+    final bool isDeletable = !isArchived ||
+        (archiveDate != null &&
+            DateTime.now().difference(archiveDate).inDays >= 30);
 
     Future<void> pickImage(StateSetter setState) async {
       final pickedFile =
@@ -467,6 +481,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                   },
                   child: const Text('Save'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (!isDeletable) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'You cannot delete this account until 30 days have passed since archiving.'),
+                        ),
+                      );
+                    } else {
+                      _deleteproducts(product, accounts);
+                    }
+                    _refresh();
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    'Delete',
+                    style: TextStyle(
+                      color: isDeletable ? Colors.red : Colors.grey,
+                    ),
+                  ),
                 ),
                 TextButton(
                   onPressed: () {
@@ -623,10 +659,24 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: customAppBar(),
+      floatingActionButton: customFab(),
+      body: customBody(),
+    );
+  }
+
+  FloatingActionButton customFab() {
+    return FloatingActionButton(
+      onPressed: () => _showForm(),
+      child: const Icon(Icons.add),
+    );
+  }
+
+  AppBar customAppBar() {
+    return AppBar(
       title: const Text('Home'),
       actions: [
         IconButton(
@@ -660,12 +710,11 @@ Widget build(BuildContext context) {
           ),
         ),
       ),
-    ),
-    floatingActionButton: FloatingActionButton(
-      onPressed: () => _showForm(),
-      child: const Icon(Icons.add),
-    ),
-    body: ValueListenableBuilder(
+    );
+  }
+
+  ValueListenableBuilder<String> customBody() {
+    return ValueListenableBuilder(
       valueListenable: _searchQueryNotifier,
       builder: (context, searchQuery, _) {
         final accountsList = accountsBox.values.toList();
@@ -679,11 +728,14 @@ Widget build(BuildContext context) {
         });
 
         // Filter the sorted list based on the search query and archived status
-        final filteredAccounts = _filterAccounts(accountsList, searchQuery).where((account) {
+        final filteredAccounts =
+            _filterAccounts(accountsList, searchQuery).where((account) {
           if (_showArchived) {
-            return account.archived; // Show only archived accounts if toggle is on
+            return account
+                .archived; // Show only archived accounts if toggle is on
           } else {
-            return !account.archived; // Show only non-archived accounts if toggle is off
+            return !account
+                .archived; // Show only non-archived accounts if toggle is off
           }
         }).toList();
 
@@ -697,9 +749,8 @@ Widget build(BuildContext context) {
           },
         );
       },
-    ),
-  );
-}
+    );
+  }
 
   Container itemCard(BuildContext context, Accounts accounts, String initials,
       var productBox) {
@@ -903,7 +954,11 @@ Widget build(BuildContext context) {
               top: 0,
               right: 0,
               child: IconButton(
-                icon: const Icon(Icons.edit, color: Colors.grey),
+                icon: const Icon(
+                  Icons.edit,
+                  color: Colors.black,
+                  size: 30,
+                ),
                 onPressed: () {
                   if (product != null) {
                     _showEditProductForm(

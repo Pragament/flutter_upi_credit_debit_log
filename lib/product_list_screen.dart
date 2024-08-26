@@ -36,7 +36,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       appBar: AppBar(
         title: Text('${widget.accounts.merchantName} Products'),
       ),
-      body: ListView.builder(
+      body: widget.accounts.productIds.isNotEmpty ?ListView.builder(
         itemCount: widget.accounts.productIds.length,
         itemBuilder: (context, index) {
           final productId = widget.accounts.productIds[index];
@@ -44,7 +44,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
           return _buildProductTile(context, product, widget.accounts);
         },
-      ),
+      ):const Center(child: Text("No products added")),
     );
   }
 

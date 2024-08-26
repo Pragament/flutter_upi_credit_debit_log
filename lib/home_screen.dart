@@ -118,71 +118,73 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           }
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _merchantNameController,
-                decoration: const InputDecoration(labelText: 'Merchant Name'),
-              ),
-              const SizedBox(height: 16.0),
-              TextField(
-                controller: _upiIdController,
-                decoration: const InputDecoration(labelText: 'UPI ID'),
-              ),
-              const SizedBox(height: 16.0),
-              TextField(
-                controller: _currencyController,
-                decoration: const InputDecoration(labelText: 'Currency'),
-              ),
-              const SizedBox(height: 16.0),
-              Row(
-                children: [
-                  const Text('Choose Color:'),
-                  const SizedBox(width: 8.0),
-                  GestureDetector(
-                    onTap: _pickColor,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      color: _selectedColor,
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _merchantNameController,
+                  decoration: const InputDecoration(labelText: 'Merchant Name'),
+                ),
+                const SizedBox(height: 16.0),
+                TextField(
+                  controller: _upiIdController,
+                  decoration: const InputDecoration(labelText: 'UPI ID'),
+                ),
+                const SizedBox(height: 16.0),
+                TextField(
+                  controller: _currencyController,
+                  decoration: const InputDecoration(labelText: 'Currency'),
+                ),
+                const SizedBox(height: 16.0),
+                Row(
+                  children: [
+                    const Text('Choose Color:'),
+                    const SizedBox(width: 8.0),
+                    GestureDetector(
+                      onTap: _pickColor,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        color: _selectedColor,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16.0),
-              Row(
-                children: [
-                  Checkbox(
-                    value: _createShortcut,
-                    onChanged: (value) {
-                      setState(() {
-                        _createShortcut = value!;
-                      });
-                    },
-                  ),
-                  const Text('Create Shortcut'),
-                ],
-              ),
-              if (accounts != null) ...[
+                  ],
+                ),
                 const SizedBox(height: 16.0),
                 Row(
                   children: [
                     Checkbox(
-                      value: accounts.archived,
+                      value: _createShortcut,
                       onChanged: (value) {
                         setState(() {
-                          accounts.archived = value!;
-                          accounts.archiveDate =
-                              value ? DateTime.now() : null;
+                          _createShortcut = value!;
                         });
                       },
                     ),
-                    const Text('Archived'),
+                    const Text('Create Shortcut'),
                   ],
                 ),
+                if (accounts != null) ...[
+                  const SizedBox(height: 16.0),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: accounts.archived,
+                        onChanged: (value) {
+                          setState(() {
+                            accounts.archived = value!;
+                            accounts.archiveDate =
+                                value ? DateTime.now() : null;
+                          });
+                        },
+                      ),
+                      const Text('Archived'),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           );
         },
       ),

@@ -60,14 +60,26 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchQueryNotifier.value = query;
   }
 
-  List<Accounts> _filterAccounts(List<Accounts> accountsList, String query) {
-    if (query.isEmpty) return accountsList;
-    return accountsList.where((account) {
-      return account.merchantName.toLowerCase().contains(query.toLowerCase()) ||
-          account.upiId.toLowerCase().contains(query.toLowerCase());
-    }).toList();
-  }
+ List<Accounts> _filterAccounts(List<Accounts> accountsList, String query) {
+  if (query.isEmpty) return accountsList;
 
+  return accountsList.where((account) {
+    // Check if the account name or UPI ID matches the search query
+    final accountMatches = account.merchantName.toLowerCase().contains(query.toLowerCase()) ||
+        account.upiId.toLowerCase().contains(query.toLowerCase());
+
+    // Check if any product associated with this account matches the search query
+    final productMatches = account.productIds.any((productId) {
+      final product = productBox.get(productId);
+      return product != null && (
+          product.name.toLowerCase().contains(query.toLowerCase()) ||
+          product.description.toLowerCase().contains(query.toLowerCase())
+      );
+    });
+
+    return accountMatches || productMatches;
+  }).toList();
+}
  void _showForm({Accounts? accounts}) {
   if (accounts != null) {
     _merchantNameController.text = accounts.merchantName;
@@ -235,27 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
   );
 }
 
-  void _pickColor() async {
-    final Color? color = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pick a color'),
-        content: SingleChildScrollView(
-          child: BlockPicker(
-            pickerColor: _selectedColor,
-            onColorChanged: (Color color) {
-              setState(() => _selectedColor = color);
-              Navigator.of(context).pop(color);
-            },
-          ),
-        ),
-      ),
-    );
-
-    if (color != null) {
-      setState(() => _selectedColor = color);
-    }
-  }
+  
 
   Future<void> _addaccounts() async {
     final id = accountsBox.isEmpty ? 0 : accountsBox.values.last.id + 1;
@@ -705,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  AppBar customAppBar() {
+ AppBar customAppBar() {
     return AppBar(
       title: const Text('Home'),
       actions: [
@@ -713,12 +705,11 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icon(_isAscending ? Icons.arrow_upward : Icons.arrow_downward),
           onPressed: _toggleSortOrder,
         ),
-        // Add a toggle switch for filtering archived accounts
         IconButton(
           icon: Icon(_showArchived ? Icons.archive : Icons.archive_outlined),
           onPressed: () {
             setState(() {
-              _showArchived = !_showArchived; // Toggle the archived view state
+              _showArchived = !_showArchived;
             });
           },
         ),
@@ -730,7 +721,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search Accounts',
+              hintText: 'Search Accounts or Products',
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8.0),
@@ -742,148 +733,155 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+ValueListenableBuilder<String> customBody() {
+  return ValueListenableBuilder(
+    valueListenable: _searchQueryNotifier,
+    builder: (context, searchQuery, _) {
+      final accountsList = accountsBox.values.toList();
 
-  ValueListenableBuilder<String> customBody() {
-    return ValueListenableBuilder(
-      valueListenable: _searchQueryNotifier,
-      builder: (context, searchQuery, _) {
-        final accountsList = accountsBox.values.toList();
+      // Sort the list based on merchant name and the current sorting order
+      accountsList.sort((a, b) {
+        int compareResult = a.merchantName
+            .toLowerCase()
+            .compareTo(b.merchantName.toLowerCase());
+        return _isAscending ? compareResult : -compareResult;
+      });
 
-        // Sort the list based on merchant name and the current sorting order
-        accountsList.sort((a, b) {
-          int compareResult = a.merchantName
-              .toLowerCase()
-              .compareTo(b.merchantName.toLowerCase());
-          return _isAscending ? compareResult : -compareResult;
-        });
+      // Filter the sorted list based on the search query and archived status
+      final filteredAccounts =
+          _filterAccounts(accountsList, searchQuery).where((account) {
+        if (_showArchived) {
+          return account.archived;
+        } else {
+          return !account.archived;
+        }
+      }).toList();
 
-        // Filter the sorted list based on the search query and archived status
-        final filteredAccounts =
-            _filterAccounts(accountsList, searchQuery).where((account) {
-          if (_showArchived) {
-            return account
-                .archived; // Show only archived accounts if toggle is on
-          } else {
-            return !account
-                .archived; // Show only non-archived accounts if toggle is off
-          }
-        }).toList();
+      return ListView.builder(
+        itemCount: filteredAccounts.length,
+        itemBuilder: (context, index) {
+          final account = filteredAccounts[index];
+          final initials = getInitials(account.merchantName);
 
-        return ListView.builder(
-          itemCount: filteredAccounts.length,
-          itemBuilder: (context, index) {
-            final account = filteredAccounts[index];
-            final initials = getInitials(account.merchantName);
+          // List of products that match the search query
+          final filteredProducts = account.productIds.map((productId) {
+            return productBox.get(productId);
+          }).where((product) {
+            if (searchQuery.isEmpty) return true; // Display all products if no search query
+            return product != null && (
+                product.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                product.description.toLowerCase().contains(searchQuery.toLowerCase()));
+          }).toList();
 
-            return itemCard(context, account, initials, productBox);
-          },
-        );
-      },
-    );
-  }
+          // Show all products if the account matches the query
+          final shouldDisplayAllProducts = account.merchantName.toLowerCase().contains(searchQuery.toLowerCase()) ||
+              account.upiId.toLowerCase().contains(searchQuery.toLowerCase());
 
-  Container itemCard(BuildContext context, Accounts accounts, String initials,
-      var productBox) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
+          return itemCard(context, account, initials, shouldDisplayAllProducts ? account.productIds.map((id) => productBox.get(id)).whereType<Product>().toList() : filteredProducts);
+        },
+      );
+    },
+  );
+}
+
+Container itemCard(BuildContext context, Accounts accounts, String initials,
+    List<Product?> filteredProducts) {
+  return Container(
+    margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          elevation: 2,
+          child: ListTile(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => CreateOrderScreen(
+                    merchantName: accounts.merchantName,
+                    upiId: accounts.upiId,
+                    amount: 1,
+                  ),
+                ),
+              );
+            },
+            contentPadding: const EdgeInsets.all(16.0),
+            leading: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(accounts.color),
+                border: Border.all(
+                  color: Colors.white,
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
             ),
-            elevation: 2,
-            child: ListTile(
-              onTap: () {
+            title: Text(accounts.merchantName),
+            subtitle: Text(formatUpiId(accounts.upiId)),
+            trailing: IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => _showForm(accounts: accounts),
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _showAddProductForm(context, accounts),
+              padding: const EdgeInsets.all(8.0),
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_forward),
+              onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => CreateOrderScreen(
-                      merchantName: accounts.merchantName,
-                      upiId: accounts.upiId,
-                      amount: 1,
+                    builder: (context) => ProductListScreen(
+                      accounts: accounts,
+                      productBox: productBox,
+                      showEditProductForm: _showEditProductForm,
+                      refreshHomeScreen: _refresh,
                     ),
                   ),
                 );
               },
-              contentPadding: const EdgeInsets.all(16.0),
-              leading: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(accounts.color),
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    initials,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-              ),
-              title: Text(accounts.merchantName),
-              subtitle: Text(formatUpiId(accounts.upiId)),
-              trailing: IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => _showForm(accounts: accounts),
-              ),
+              padding: const EdgeInsets.all(8.0),
             ),
-          ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () => _showAddProductForm(context, accounts),
-                padding: const EdgeInsets.all(8.0),
-              ),
-              IconButton(
-                icon: const Icon(Icons.arrow_forward),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => ProductListScreen(
-                        accounts: accounts,
-                        productBox: productBox,
-                        showEditProductForm: _showEditProductForm,
-                        refreshHomeScreen: _refresh,
-                      ),
-                    ),
-                  );
-                },
-                padding: const EdgeInsets.all(8.0),
-              ),
-            ],
-          ),
-          SizedBox(
-            height: accounts.productIds.isNotEmpty
-                ? 110
-                : 0, // Adjust the height to avoid overflow
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: accounts.productIds.length,
-              itemBuilder: (context, index) {
-                final productId = accounts.productIds[index];
-                final product = productBox.get(productId);
+          ],
+        ),
+        SizedBox(
+          height: filteredProducts.isNotEmpty ? 110 : 0,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: filteredProducts.length,
+            itemBuilder: (context, index) {
+              final product = filteredProducts[index];
 
-                return productTile(product, accounts, () {
-                  setState(() {});
-                });
-              },
-            ),
+              return productTile(product, accounts, () {
+                setState(() {});
+              });
+            },
           ),
-        ],
-      ),
-    );
-  }
-
+        ),
+      ],
+    ),
+  );
+}
   GestureDetector productTile(
       Product? product, Accounts accounts, Function() refreshCallback) {
     return GestureDetector(

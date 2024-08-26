@@ -838,7 +838,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           SizedBox(
-            height: 110, // Adjust the height to avoid overflow
+            height: accounts.productIds.isNotEmpty
+                ? 110
+                : 0, // Adjust the height to avoid overflow
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: accounts.productIds.length,

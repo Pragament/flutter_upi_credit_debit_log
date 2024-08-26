@@ -60,194 +60,196 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchQueryNotifier.value = query;
   }
 
- List<Accounts> _filterAccounts(List<Accounts> accountsList, String query) {
-  if (query.isEmpty) return accountsList;
+  List<Accounts> _filterAccounts(List<Accounts> accountsList, String query) {
+    if (query.isEmpty) return accountsList;
 
-  return accountsList.where((account) {
-    // Check if the account name or UPI ID matches the search query
-    final accountMatches = account.merchantName.toLowerCase().contains(query.toLowerCase()) ||
-        account.upiId.toLowerCase().contains(query.toLowerCase());
+    return accountsList.where((account) {
+      // Check if the account name or UPI ID matches the search query
+      final accountMatches =
+          account.merchantName.toLowerCase().contains(query.toLowerCase()) ||
+              account.upiId.toLowerCase().contains(query.toLowerCase());
 
-    // Check if any product associated with this account matches the search query
-    final productMatches = account.productIds.any((productId) {
-      final product = productBox.get(productId);
-      return product != null && (
-          product.name.toLowerCase().contains(query.toLowerCase()) ||
-          product.description.toLowerCase().contains(query.toLowerCase())
-      );
-    });
+      // Check if any product associated with this account matches the search query
+      final productMatches = account.productIds.any((productId) {
+        final product = productBox.get(productId);
+        return product != null &&
+            (product.name.toLowerCase().contains(query.toLowerCase()) ||
+                product.description
+                    .toLowerCase()
+                    .contains(query.toLowerCase()));
+      });
 
-    return accountMatches || productMatches;
-  }).toList();
-}
- void _showForm({Accounts? accounts}) {
-  if (accounts != null) {
-    _merchantNameController.text = accounts.merchantName;
-    _upiIdController.text = accounts.upiId;
-    _currencyController.text = accounts.currency;
-    _selectedColor = Color(accounts.color);
-    _createShortcut = accounts.createShortcut;
-  } else {
-    _merchantNameController.clear();
-    _upiIdController.clear();
-    _currencyController.clear();
-    _selectedColor = Colors.blue;
-    _createShortcut = false;
+      return accountMatches || productMatches;
+    }).toList();
   }
 
-  final bool isArchived = accounts?.archived ?? false;
-  final DateTime? archiveDate = accounts?.archiveDate;
-  final bool isDeletable = !isArchived ||
-      (archiveDate != null &&
-          DateTime.now().difference(archiveDate).inDays >= 30);
+  void _showForm({Accounts? accounts}) {
+    if (accounts != null) {
+      _merchantNameController.text = accounts.merchantName;
+      _upiIdController.text = accounts.upiId;
+      _currencyController.text = accounts.currency;
+      _selectedColor = Color(accounts.color);
+      _createShortcut = accounts.createShortcut;
+    } else {
+      _merchantNameController.clear();
+      _upiIdController.clear();
+      _currencyController.clear();
+      _selectedColor = Colors.blue;
+      _createShortcut = false;
+    }
 
-  showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: Text(accounts == null ? 'Add accounts' : 'Edit accounts'),
-      content: StatefulBuilder(
-        builder: (BuildContext context, StateSetter setState) {
-          // Move the _pickColor method inside the builder
-          void _pickColor() async {
-            final Color? color = await showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Pick a color'),
-                content: SingleChildScrollView(
-                  child: BlockPicker(
-                    pickerColor: _selectedColor,
-                    onColorChanged: (Color color) {
-                      setState(() => _selectedColor = color); // Update state
-                      Navigator.of(context).pop(color);
-                    },
-                  ),
-                ),
-              ),
-            );
+    final bool isArchived = accounts?.archived ?? false;
+    final DateTime? archiveDate = accounts?.archiveDate;
+    final bool isDeletable = !isArchived ||
+        (archiveDate != null &&
+            DateTime.now().difference(archiveDate).inDays >= 30);
 
-            if (color != null) {
-              setState(() => _selectedColor = color); // Update state
-            }
-          }
-
-          return SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _merchantNameController,
-                  decoration: const InputDecoration(labelText: 'Merchant Name'),
-                ),
-                const SizedBox(height: 16.0),
-                TextField(
-                  controller: _upiIdController,
-                  decoration: const InputDecoration(labelText: 'UPI ID'),
-                ),
-                const SizedBox(height: 16.0),
-                TextField(
-                  controller: _currencyController,
-                  decoration: const InputDecoration(labelText: 'Currency'),
-                ),
-                const SizedBox(height: 16.0),
-                Row(
-                  children: [
-                    const Text('Choose Color:'),
-                    const SizedBox(width: 8.0),
-                    GestureDetector(
-                      onTap: _pickColor,
-                      child: Container(
-                        width: 30,
-                        height: 30,
-                        color: _selectedColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16.0),
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _createShortcut,
-                      onChanged: (value) {
-                        setState(() {
-                          _createShortcut = value!;
-                        });
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(accounts == null ? 'Add accounts' : 'Edit accounts'),
+        content: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            // Move the _pickColor method inside the builder
+            void _pickColor() async {
+              final Color? color = await showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Pick a color'),
+                  content: SingleChildScrollView(
+                    child: BlockPicker(
+                      pickerColor: _selectedColor,
+                      onColorChanged: (Color color) {
+                        setState(() => _selectedColor = color); // Update state
+                        Navigator.of(context).pop(color);
                       },
                     ),
-                    const Text('Create Shortcut'),
-                  ],
+                  ),
                 ),
-                if (accounts != null) ...[
+              );
+
+              if (color != null) {
+                setState(() => _selectedColor = color); // Update state
+              }
+            }
+
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: _merchantNameController,
+                    decoration:
+                        const InputDecoration(labelText: 'Merchant Name'),
+                  ),
+                  const SizedBox(height: 16.0),
+                  TextField(
+                    controller: _upiIdController,
+                    decoration: const InputDecoration(labelText: 'UPI ID'),
+                  ),
+                  const SizedBox(height: 16.0),
+                  TextField(
+                    controller: _currencyController,
+                    decoration: const InputDecoration(labelText: 'Currency'),
+                  ),
+                  const SizedBox(height: 16.0),
+                  Row(
+                    children: [
+                      const Text('Choose Color:'),
+                      const SizedBox(width: 8.0),
+                      GestureDetector(
+                        onTap: _pickColor,
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          color: _selectedColor,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16.0),
                   Row(
                     children: [
                       Checkbox(
-                        value: accounts.archived,
+                        value: _createShortcut,
                         onChanged: (value) {
                           setState(() {
-                            accounts.archived = value!;
-                            accounts.archiveDate =
-                                value ? DateTime.now() : null;
+                            _createShortcut = value!;
                           });
                         },
                       ),
-                      const Text('Archived'),
+                      const Text('Create Shortcut'),
                     ],
                   ),
+                  if (accounts != null) ...[
+                    const SizedBox(height: 16.0),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: accounts.archived,
+                          onChanged: (value) {
+                            setState(() {
+                              accounts.archived = value!;
+                              accounts.archiveDate =
+                                  value ? DateTime.now() : null;
+                            });
+                          },
+                        ),
+                        const Text('Archived'),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          );
-        },
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        accounts != null
-            ? TextButton(
-                onPressed: () {
-                  if (!isDeletable) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'You cannot delete this account until 30 days have passed since archiving.'),
-                      ),
-                    );
-                  } else {
-                    _deleteaccounts(accounts);
-                  }
-                  Navigator.of(context).pop();
-                },
-                child: Text(
-                  'Delete',
-                  style: TextStyle(
-                    color: isDeletable ? Colors.red : Colors.grey,
-                  ),
-                ),
-              )
-            : const SizedBox(
-                height: 0,
-                width: 0,
               ),
-        TextButton(
-          onPressed: () {
-            if (accounts == null) {
-              _addaccounts();
-            } else {
-              _updateaccounts(accounts);
-            }
-            Navigator.of(context).pop();
+            );
           },
-          child: const Text('Save'),
         ),
-      ],
-    ),
-  );
-}
-
-  
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          accounts != null
+              ? TextButton(
+                  onPressed: () {
+                    if (!isDeletable) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'You cannot delete this account until 30 days have passed since archiving.'),
+                        ),
+                      );
+                    } else {
+                      _deleteaccounts(accounts);
+                    }
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    'Delete',
+                    style: TextStyle(
+                      color: isDeletable ? Colors.red : Colors.grey,
+                    ),
+                  ),
+                )
+              : const SizedBox(
+                  height: 0,
+                  width: 0,
+                ),
+          TextButton(
+            onPressed: () {
+              if (accounts == null) {
+                _addaccounts();
+              } else {
+                _updateaccounts(accounts);
+              }
+              Navigator.of(context).pop();
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _addaccounts() async {
     final id = accountsBox.isEmpty ? 0 : accountsBox.values.last.id + 1;
@@ -697,7 +699,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
- AppBar customAppBar() {
+  AppBar customAppBar() {
     return AppBar(
       title: const Text('Home'),
       actions: [
@@ -733,155 +735,173 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-ValueListenableBuilder<String> customBody() {
-  return ValueListenableBuilder(
-    valueListenable: _searchQueryNotifier,
-    builder: (context, searchQuery, _) {
-      final accountsList = accountsBox.values.toList();
 
-      // Sort the list based on merchant name and the current sorting order
-      accountsList.sort((a, b) {
-        int compareResult = a.merchantName
-            .toLowerCase()
-            .compareTo(b.merchantName.toLowerCase());
-        return _isAscending ? compareResult : -compareResult;
-      });
+  ValueListenableBuilder<String> customBody() {
+    return ValueListenableBuilder(
+      valueListenable: _searchQueryNotifier,
+      builder: (context, searchQuery, _) {
+        final accountsList = accountsBox.values.toList();
 
-      // Filter the sorted list based on the search query and archived status
-      final filteredAccounts =
-          _filterAccounts(accountsList, searchQuery).where((account) {
-        if (_showArchived) {
-          return account.archived;
-        } else {
-          return !account.archived;
-        }
-      }).toList();
+        // Sort the list based on merchant name and the current sorting order
+        accountsList.sort((a, b) {
+          int compareResult = a.merchantName
+              .toLowerCase()
+              .compareTo(b.merchantName.toLowerCase());
+          return _isAscending ? compareResult : -compareResult;
+        });
 
-      return ListView.builder(
-        itemCount: filteredAccounts.length,
-        itemBuilder: (context, index) {
-          final account = filteredAccounts[index];
-          final initials = getInitials(account.merchantName);
+        // Filter the sorted list based on the search query and archived status
+        final filteredAccounts =
+            _filterAccounts(accountsList, searchQuery).where((account) {
+          if (_showArchived) {
+            return account.archived;
+          } else {
+            return !account.archived;
+          }
+        }).toList();
 
-          // List of products that match the search query
-          final filteredProducts = account.productIds.map((productId) {
-            return productBox.get(productId);
-          }).where((product) {
-            if (searchQuery.isEmpty) return true; // Display all products if no search query
-            return product != null && (
-                product.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
-                product.description.toLowerCase().contains(searchQuery.toLowerCase()));
-          }).toList();
+        return ListView.builder(
+          itemCount: filteredAccounts.length,
+          itemBuilder: (context, index) {
+            final account = filteredAccounts[index];
+            final initials = getInitials(account.merchantName);
 
-          // Show all products if the account matches the query
-          final shouldDisplayAllProducts = account.merchantName.toLowerCase().contains(searchQuery.toLowerCase()) ||
-              account.upiId.toLowerCase().contains(searchQuery.toLowerCase());
+            // List of products that match the search query
+            final filteredProducts = account.productIds.map((productId) {
+              return productBox.get(productId);
+            }).where((product) {
+              if (searchQuery.isEmpty)
+                return true; // Display all products if no search query
+              return product != null &&
+                  (product.name
+                          .toLowerCase()
+                          .contains(searchQuery.toLowerCase()) ||
+                      product.description
+                          .toLowerCase()
+                          .contains(searchQuery.toLowerCase()));
+            }).toList();
 
-          return itemCard(context, account, initials, shouldDisplayAllProducts ? account.productIds.map((id) => productBox.get(id)).whereType<Product>().toList() : filteredProducts);
-        },
-      );
-    },
-  );
-}
+            // Show all products if the account matches the query
+            final shouldDisplayAllProducts = account.merchantName
+                    .toLowerCase()
+                    .contains(searchQuery.toLowerCase()) ||
+                account.upiId.toLowerCase().contains(searchQuery.toLowerCase());
 
-Container itemCard(BuildContext context, Accounts accounts, String initials,
-    List<Product?> filteredProducts) {
-  return Container(
-    margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.0),
-          ),
-          elevation: 2,
-          child: ListTile(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => CreateOrderScreen(
-                    merchantName: accounts.merchantName,
-                    upiId: accounts.upiId,
-                    amount: 1,
-                  ),
-                ),
-              );
-            },
-            contentPadding: const EdgeInsets.all(16.0),
-            leading: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(accounts.color),
-                border: Border.all(
-                  color: Colors.white,
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  initials,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ),
+            return itemCard(
+                context,
+                account,
+                initials,
+                shouldDisplayAllProducts
+                    ? account.productIds
+                        .map((id) => productBox.get(id))
+                        .whereType<Product>()
+                        .toList()
+                    : filteredProducts);
+          },
+        );
+      },
+    );
+  }
+
+  Container itemCard(BuildContext context, Accounts accounts, String initials,
+      List<Product?> filteredProducts) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
             ),
-            title: Text(accounts.merchantName),
-            subtitle: Text(formatUpiId(accounts.upiId)),
-            trailing: IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _showForm(accounts: accounts),
-            ),
-          ),
-        ),
-        Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () => _showAddProductForm(context, accounts),
-              padding: const EdgeInsets.all(8.0),
-            ),
-            IconButton(
-              icon: const Icon(Icons.arrow_forward),
-              onPressed: () {
+            elevation: 2,
+            child: ListTile(
+              onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => ProductListScreen(
-                      accounts: accounts,
-                      productBox: productBox,
-                      showEditProductForm: _showEditProductForm,
-                      refreshHomeScreen: _refresh,
+                    builder: (context) => CreateOrderScreen(
+                      merchantName: accounts.merchantName,
+                      upiId: accounts.upiId,
+                      amount: 1,
                     ),
                   ),
                 );
               },
-              padding: const EdgeInsets.all(8.0),
+              contentPadding: const EdgeInsets.all(16.0),
+              leading: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(accounts.color),
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ),
+              title: Text(accounts.merchantName),
+              subtitle: Text(formatUpiId(accounts.upiId)),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => _showForm(accounts: accounts),
+              ),
             ),
-          ],
-        ),
-        SizedBox(
-          height: filteredProducts.isNotEmpty ? 110 : 0,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: filteredProducts.length,
-            itemBuilder: (context, index) {
-              final product = filteredProducts[index];
-
-              return productTile(product, accounts, () {
-                setState(() {});
-              });
-            },
           ),
-        ),
-      ],
-    ),
-  );
-}
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () => _showAddProductForm(context, accounts),
+                padding: const EdgeInsets.all(8.0),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ProductListScreen(
+                        accounts: accounts,
+                        productBox: productBox,
+                        showEditProductForm: _showEditProductForm,
+                        refreshHomeScreen: _refresh,
+                      ),
+                    ),
+                  );
+                },
+                padding: const EdgeInsets.all(8.0),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: filteredProducts.isNotEmpty ? 110 : 0,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: filteredProducts.length,
+              itemBuilder: (context, index) {
+                final product = filteredProducts[index];
+
+                return productTile(product, accounts, () {
+                  setState(() {});
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   GestureDetector productTile(
       Product? product, Accounts accounts, Function() refreshCallback) {
     return GestureDetector(

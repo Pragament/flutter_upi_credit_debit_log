@@ -68,147 +68,170 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  void _showForm({Accounts? accounts}) {
-    if (accounts != null) {
-      _merchantNameController.text = accounts.merchantName;
-      _upiIdController.text = accounts.upiId;
-      _currencyController.text = accounts.currency;
-      _selectedColor = Color(accounts.color);
-      _createShortcut = accounts.createShortcut;
-    } else {
-      _merchantNameController.clear();
-      _upiIdController.clear();
-      _currencyController.clear();
-      _selectedColor = Colors.blue;
-      _createShortcut = false;
-    }
+ void _showForm({Accounts? accounts}) {
+  if (accounts != null) {
+    _merchantNameController.text = accounts.merchantName;
+    _upiIdController.text = accounts.upiId;
+    _currencyController.text = accounts.currency;
+    _selectedColor = Color(accounts.color);
+    _createShortcut = accounts.createShortcut;
+  } else {
+    _merchantNameController.clear();
+    _upiIdController.clear();
+    _currencyController.clear();
+    _selectedColor = Colors.blue;
+    _createShortcut = false;
+  }
 
-    final bool isArchived = accounts?.archived ?? false;
-    final DateTime? archiveDate = accounts?.archiveDate;
-    final bool isDeletable = !isArchived ||
-        (archiveDate != null &&
-            DateTime.now().difference(archiveDate).inDays >= 30);
+  final bool isArchived = accounts?.archived ?? false;
+  final DateTime? archiveDate = accounts?.archiveDate;
+  final bool isDeletable = !isArchived ||
+      (archiveDate != null &&
+          DateTime.now().difference(archiveDate).inDays >= 30);
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(accounts == null ? 'Add accounts' : 'Edit accounts'),
-        content: StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _merchantNameController,
-                  decoration: const InputDecoration(labelText: 'Merchant Name'),
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text(accounts == null ? 'Add accounts' : 'Edit accounts'),
+      content: StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          // Move the _pickColor method inside the builder
+          void _pickColor() async {
+            final Color? color = await showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Pick a color'),
+                content: SingleChildScrollView(
+                  child: BlockPicker(
+                    pickerColor: _selectedColor,
+                    onColorChanged: (Color color) {
+                      setState(() => _selectedColor = color); // Update state
+                      Navigator.of(context).pop(color);
+                    },
+                  ),
                 ),
-                const SizedBox(height: 16.0),
-                TextField(
-                  controller: _upiIdController,
-                  decoration: const InputDecoration(labelText: 'UPI ID'),
-                ),
-                const SizedBox(height: 16.0),
-                TextField(
-                  controller: _currencyController,
-                  decoration: const InputDecoration(labelText: 'Currency'),
-                ),
-                const SizedBox(height: 16.0),
-                Row(
-                  children: [
-                    const Text('Choose Color:'),
-                    const SizedBox(width: 8.0),
-                    GestureDetector(
-                      onTap: _pickColor,
-                      child: Container(
-                        width: 30,
-                        height: 30,
-                        color: _selectedColor,
-                      ),
+              ),
+            );
+
+            if (color != null) {
+              setState(() => _selectedColor = color); // Update state
+            }
+          }
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _merchantNameController,
+                decoration: const InputDecoration(labelText: 'Merchant Name'),
+              ),
+              const SizedBox(height: 16.0),
+              TextField(
+                controller: _upiIdController,
+                decoration: const InputDecoration(labelText: 'UPI ID'),
+              ),
+              const SizedBox(height: 16.0),
+              TextField(
+                controller: _currencyController,
+                decoration: const InputDecoration(labelText: 'Currency'),
+              ),
+              const SizedBox(height: 16.0),
+              Row(
+                children: [
+                  const Text('Choose Color:'),
+                  const SizedBox(width: 8.0),
+                  GestureDetector(
+                    onTap: _pickColor,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      color: _selectedColor,
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16.0),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _createShortcut,
+                    onChanged: (value) {
+                      setState(() {
+                        _createShortcut = value!;
+                      });
+                    },
+                  ),
+                  const Text('Create Shortcut'),
+                ],
+              ),
+              if (accounts != null) ...[
                 const SizedBox(height: 16.0),
                 Row(
                   children: [
                     Checkbox(
-                      value: _createShortcut,
+                      value: accounts.archived,
                       onChanged: (value) {
                         setState(() {
-                          _createShortcut = value!;
+                          accounts.archived = value!;
+                          accounts.archiveDate =
+                              value ? DateTime.now() : null;
                         });
                       },
                     ),
-                    const Text('Create Shortcut'),
+                    const Text('Archived'),
                   ],
                 ),
-                if (accounts != null) ...[
-                  const SizedBox(height: 16.0),
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: accounts.archived,
-                        onChanged: (value) {
-                          setState(() {
-                            accounts.archived = value!;
-                            accounts.archiveDate =
-                                value ? DateTime.now() : null;
-                          });
-                        },
-                      ),
-                      const Text('Archived'),
-                    ],
-                  ),
-                ],
               ],
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          accounts != null
-              ? TextButton(
-                  onPressed: () {
-                    if (!isDeletable) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'You cannot delete this account until 30 days have passed since archiving.'),
-                        ),
-                      );
-                    } else {
-                      _deleteaccounts(accounts);
-                    }
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(
-                    'Delete',
-                    style: TextStyle(
-                      color: isDeletable ? Colors.red : Colors.grey,
-                    ),
-                  ),
-                )
-              : const SizedBox(
-                  height: 0,
-                  width: 0,
-                ),
-          TextButton(
-            onPressed: () {
-              if (accounts == null) {
-                _addaccounts();
-              } else {
-                _updateaccounts(accounts);
-              }
-              Navigator.of(context).pop();
-            },
-            child: const Text('Save'),
-          ),
-        ],
+            ],
+          );
+        },
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        accounts != null
+            ? TextButton(
+                onPressed: () {
+                  if (!isDeletable) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'You cannot delete this account until 30 days have passed since archiving.'),
+                      ),
+                    );
+                  } else {
+                    _deleteaccounts(accounts);
+                  }
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  'Delete',
+                  style: TextStyle(
+                    color: isDeletable ? Colors.red : Colors.grey,
+                  ),
+                ),
+              )
+            : const SizedBox(
+                height: 0,
+                width: 0,
+              ),
+        TextButton(
+          onPressed: () {
+            if (accounts == null) {
+              _addaccounts();
+            } else {
+              _updateaccounts(accounts);
+            }
+            Navigator.of(context).pop();
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    ),
+  );
+}
 
   void _pickColor() async {
     final Color? color = await showDialog(

@@ -33,7 +33,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   String? _clientTxnId;
   Timer? _timer;
   int _secondsLeft = 120;
-
+  bool _includeAmountInQr = false;
   late Accounts _account;
   List<Product>? _products;
   List<Product> _selectedProducts = [];
@@ -108,8 +108,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
     setState(() {
       _clientTxnId = DateTime.now().millisecondsSinceEpoch.toString();
-      _qrCodeData =
-          'upi://pay?pa=${_account.upiId}&pn=${_account.merchantName}&am=${_amountController.text}&tn=$_clientTxnId&cu=${_account.currency}';
+
+      // Conditionally include amount in QR data
+      String qrData =
+          'upi://pay?pa=${_account.upiId}&pn=${_account.merchantName}';
+      if (_includeAmountInQr) {
+        qrData += '&am=${_amountController.text}';
+      }
+      qrData += '&tn=$_clientTxnId&cu=${_account.currency}';
+
+      _qrCodeData = qrData;
       _startTimer();
     });
   }
@@ -272,7 +280,21 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       builder: (context) {
         // Using StatefulBuilder to manage the dialog's internal state
         return AlertDialog(
-          title: const Text('Select Products'),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Select Products'),
+              IconButton(
+                icon: const Icon(Icons.add), // Add plus icon here
+                onPressed: () {
+                  Navigator.of(context)
+                      .pop(); // Close the current dialog before opening the new one
+                  _showAddProductForm(
+                      context, _account); // Call the add product form
+                },
+              ),
+            ],
+          ),
           content: SizedBox(
             width: double.maxFinite,
             child: StatefulBuilder(
@@ -484,6 +506,139 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
+  void _showAddProductForm(BuildContext context, Accounts accounts) {
+    final TextEditingController productNameController = TextEditingController();
+    final TextEditingController productDescriptionController =
+        TextEditingController();
+    final TextEditingController productPriceController =
+        TextEditingController();
+
+    File? pickedImageFile;
+
+    Future<void> pickImage(StateSetter setState) async {
+      final pickedFile =
+          await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
+        // Use setState from StatefulBuilder to update the image
+        setState(() {
+          pickedImageFile = File(pickedFile.path);
+        });
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text('Add New Product'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: productNameController,
+                      decoration:
+                          const InputDecoration(hintText: 'Enter product name'),
+                      autofocus: true,
+                    ),
+                    const SizedBox(height: 8.0),
+                    TextField(
+                      controller: productDescriptionController,
+                      decoration: const InputDecoration(
+                          hintText: 'Enter product description'),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 8.0),
+                    TextField(
+                      controller: productPriceController,
+                      decoration: const InputDecoration(
+                          hintText: 'Enter product price'),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 8.0),
+                    GestureDetector(
+                      onTap: () => pickImage(setState),
+                      child: pickedImageFile != null
+                          ? Image.file(
+                              pickedImageFile!,
+                              height: 150,
+                              width: 150,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              height: 50,
+                              width: 50,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.add_a_photo,
+                                  color: Colors.white),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () {
+                    final productName = productNameController.text.trim();
+                    final productDescription =
+                        productDescriptionController.text.trim();
+                    final productPrice =
+                        double.tryParse(productPriceController.text.trim()) ??
+                            0.0;
+
+                    if (productName.isNotEmpty) {
+                      // Generate a unique ID by using the next available integer key
+                      final productBox = Hive.box<Product>('products');
+                      final int newProductId = productBox.isEmpty
+                          ? 0
+                          : productBox.keys.cast<int>().last + 1;
+
+                      // Create the new product
+                      final newProduct = Product(
+                        id: newProductId,
+                        name: productName,
+                        price: productPrice,
+                        description: productDescription,
+                        imageUrl: pickedImageFile!
+                            .path, // Store the file path if an image is picked
+                      );
+
+                      // Save the product to the Hive box
+                      productBox.put(newProductId, newProduct);
+
+                      // Update the accounts with the new product ID
+                      accounts.productIds.add(newProductId);
+                      Hive.box<Accounts>('accounts')
+                          .put(accounts.key, accounts);
+
+                      Navigator.of(context).pop();
+                    }
+                    _refresh();
+                  },
+                  child: const Text('Save'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancel'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _refresh() {
+    setState(() {
+      _initializeProducts();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -531,6 +686,21 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               const SizedBox(height: 16.0),
               _buildQRCodeWidget(),
               const SizedBox(height: 16.0),
+
+              // Checkbox for including amount in QR
+              Row(
+                children: [
+                  Checkbox(
+                    value: _includeAmountInQr,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _includeAmountInQr = value ?? false;
+                      });
+                    },
+                  ),
+                  const Text('Include amount in QR'),
+                ],
+              ),
 
               // Row for image pickers
               Row(
@@ -612,7 +782,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Merchant: ${_account.merchantName}',
+                    _account.merchantName,
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.bold),
                   ),

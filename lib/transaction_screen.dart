@@ -8,58 +8,97 @@ class TransactionScreen extends StatefulWidget {
   const TransactionScreen({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _TransactionScreenState createState() => _TransactionScreenState();
 }
 
 class _TransactionScreenState extends State<TransactionScreen> {
   String _selectedStatus = 'all'; // Default to 'all'
+  String _searchQuery = ''; // Default to empty search query
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Recent Transactions'),
-        actions: [
-          DropdownButton<String>(
-            value: _selectedStatus,
-            items: <String>['all', 'pending', 'completed'].map((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              setState(() {
-                _selectedStatus = newValue ?? 'all';
-              });
-            },
-            icon: const Icon(Icons.filter_list),
+      ),
+      body: Column(
+        children: [
+          // Search and Filter Section
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                // Search Bar
+                Expanded(
+                  child: TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value.toLowerCase(); // Update search query
+                      });
+                    },
+                    decoration: const InputDecoration(
+                      hintText: 'Search by product...',
+                      hintStyle: TextStyle(color: Colors.black54),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Status Filter Dropdown
+                DropdownButton<String>(
+                  value: _selectedStatus,
+                  items: <String>['all', 'pending', 'completed'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedStatus = newValue ?? 'all';
+                    });
+                  },
+                  icon: const Icon(Icons.filter_list),
+                ),
+              ],
+            ),
+          ),
+          // Orders List
+          Expanded(
+            child: ValueListenableBuilder(
+              valueListenable: Hive.box<Order>('orders').listenable(),
+              builder: (context, Box<Order> box, _) {
+                final productBox = Hive.box<Product>('products');
+                
+                final orders = box.values.where((order) {
+                  final matchesStatus = _selectedStatus == 'all' || order.status == _selectedStatus;
+                  
+                  // Check if any product in the order matches the search query
+                  final matchesSearch = _searchQuery.isEmpty || order.products.keys.any((productId) {
+                    final product = productBox.get(productId);
+                    return product != null && product.name.toLowerCase().contains(_searchQuery);
+                  });
+
+                  return matchesStatus && matchesSearch;
+                }).toList();
+
+                if (orders.isEmpty) {
+                  return const Center(
+                    child: Text('No transactions available.'),
+                  );
+                }
+
+                return ListView.builder(
+                  itemCount: orders.length,
+                  itemBuilder: (context, index) {
+                    final order = orders[index];
+                    return OrderCard(order: order);
+                  },
+                );
+              },
+            ),
           ),
         ],
-      ),
-      body: ValueListenableBuilder(
-        valueListenable: Hive.box<Order>('orders').listenable(),
-        builder: (context, Box<Order> box, _) {
-          final orders = box.values.where((order) {
-            if (_selectedStatus == 'all') return true;
-            return order.status == _selectedStatus;
-          }).toList();
-
-          if (orders.isEmpty) {
-            return const Center(
-              child: Text('No transactions available.'),
-            );
-          }
-
-          return ListView.builder(
-            itemCount: orders.length,
-            itemBuilder: (context, index) {
-              final order = orders[index];
-              return OrderCard(order: order);
-            },
-          );
-        },
       ),
     );
   }

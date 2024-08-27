@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:payment/pay.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
@@ -10,6 +10,7 @@ class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({Key? key}) : super(key: key);
 
   @override
+  // ignore: library_private_types_in_public_api
   _QrScannerScreenState createState() => _QrScannerScreenState();
 }
 
@@ -64,7 +65,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       await orderBox.add(newOrder);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('QR Code saved successfully')),
+        const SnackBar(content: Text('QR Code saved successfully')),
       );
     }
 

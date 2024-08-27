@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:payment/MainScreen.dart';
+import 'package:payment/main_screen.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'package:payment/create_order_screen.dart';
 import 'package:payment/pay.dart';

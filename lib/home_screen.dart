@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
         content: StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             // Move the _pickColor method inside the builder
-            void _pickColor() async {
+            void pickColor() async {
               final Color? color = await showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
@@ -158,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Text('Choose Color:'),
                       const SizedBox(width: 8.0),
                       GestureDetector(
-                        onTap: _pickColor,
+                        onTap: pickColor,
                         child: Container(
                           width: 30,
                           height: 30,
@@ -770,8 +770,9 @@ class _HomeScreenState extends State<HomeScreen> {
             final filteredProducts = account.productIds.map((productId) {
               return productBox.get(productId);
             }).where((product) {
-              if (searchQuery.isEmpty)
+              if (searchQuery.isEmpty) {
                 return true; // Display all products if no search query
+              }
               return product != null &&
                   (product.name
                           .toLowerCase()

@@ -423,7 +423,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(product.name,
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     Text('Price: \$${product.price.toStringAsFixed(2)}'),
                     Row(
                       children: [

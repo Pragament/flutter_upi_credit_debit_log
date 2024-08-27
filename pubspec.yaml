@@ -39,10 +39,12 @@ dependencies:
   image_picker: ^1.0.8
   intl: ^0.19.0
   local_auth: ^2.1.6
-  path_provider: null
+  path_provider: ^2.1.4
+  pdf: ^3.11.1
   qr_code_scanner: ^1.0.1
   qr_flutter: ^4.1.0
   quick_actions: ^1.0.7
+  share_plus: ^10.0.2
   shared_preferences: ^2.2.3
 
 dev_dependencies:

@@ -5,7 +5,7 @@ import 'package:hive/hive.dart';
 import 'package:payment/home_screen.dart';
 import 'package:quick_actions/quick_actions.dart';
 
-import 'package:payment/create_order_screen.dart';
+
 import 'package:payment/transaction_screen.dart';
 import 'package:payment/pay.dart';
 
@@ -23,8 +23,6 @@ class KBottom extends StatefulWidget {
 class _KBottomState extends State<KBottom> {
   int _bottomNavIndex = 0;
   final PageController _pageController = PageController();
-  String? _merchantName;
-  String? _upiId;
 
   @override
   void initState() {
@@ -38,8 +36,6 @@ class _KBottomState extends State<KBottom> {
 
     if (accounts != null) {
       setState(() {
-        _merchantName = accounts.merchantName;
-        _upiId = accounts.upiId;
       });
     }
   }

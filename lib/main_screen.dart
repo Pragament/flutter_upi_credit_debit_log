@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:quick_actions/quick_actions.dart';
-import 'package:payment/KBottom.dart';
+import 'package:payment/bottom_navbar.dart';
 
 class MainScreen extends StatelessWidget {
   final QuickActions quickActions;
@@ -42,12 +42,10 @@ class MainScreen extends StatelessWidget {
           options: const AuthenticationOptions(biometricOnly: true),
         );
       } else {
-        print('Biometric authentication is not available on this device.');
       }
 
       return isAuthenticated;
     } catch (e) {
-      print('Error during authentication: $e');
       return false;
     }
   }

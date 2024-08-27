@@ -2,12 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:payment/order_detail_screen.dart';
 import 'package:payment/pay.dart';
 
 class TransactionScreen extends StatefulWidget {
   const TransactionScreen({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _TransactionScreenState createState() => _TransactionScreenState();
 }
 
@@ -103,7 +105,6 @@ class _TransactionScreenState extends State<TransactionScreen> {
     );
   }
 }
-
 class OrderCard extends StatelessWidget {
   final Order order;
 
@@ -114,68 +115,77 @@ class OrderCard extends StatelessWidget {
     final formattedTimestamp =
         DateFormat('d MMMM yyyy, h:mma').format(order.timestamp);
 
-    return Card(
-      margin: const EdgeInsets.all(8.0),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: ProductImagesList(productIds: order.products.keys.toList()),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    _showEditDialog(context, order);
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Order ${order.status}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Placed at: $formattedTimestamp',
-                  style: const TextStyle(fontSize: 12),
-                ),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      const WidgetSpan(
-                        child: Icon(Icons.currency_rupee, size: 16),
-                      ),
-                      TextSpan(
-                        text: ' ${order.amount}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OrderDetailsScreen(order: order),
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.all(8.0),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: ProductImagesList(productIds: order.products.keys.toList()),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                      _showEditDialog(context, order);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Order ${order.status}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Placed at: $formattedTimestamp',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        const WidgetSpan(
+                          child: Icon(Icons.currency_rupee, size: 16),
+                        ),
+                        TextSpan(
+                          text: ' ${order.amount}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   void _showEditDialog(BuildContext context, Order order) {
-    final _statusController = TextEditingController(text: order.status);
-    final _amountController = TextEditingController(text: order.amount);
-    String? _selectedStatus = order.status;
+    final amountController = TextEditingController(text: order.amount);
+    String? selectedStatus = order.status;
     
     showDialog(
       context: context,
@@ -186,7 +196,7 @@ class OrderCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                controller: _amountController,
+                controller: amountController,
                 decoration: const InputDecoration(
                   labelText: 'Amount',
                 ),
@@ -194,7 +204,7 @@ class OrderCard extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedStatus,
+                value: selectedStatus,
                 items: <String>['pending', 'completed'].map((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
@@ -202,7 +212,7 @@ class OrderCard extends StatelessWidget {
                   );
                 }).toList(),
                 onChanged: (String? newValue) {
-                  _selectedStatus = newValue;
+                  selectedStatus = newValue;
                 },
                 decoration: const InputDecoration(
                   labelText: 'Status',
@@ -214,9 +224,9 @@ class OrderCard extends StatelessWidget {
             TextButton(
               onPressed: () {
                 // Update the order with new data
-                if (_selectedStatus != null) {
-                  order.status = _selectedStatus!;
-                  order.amount = _amountController.text;
+                if (selectedStatus != null) {
+                  order.status = selectedStatus!;
+                  order.amount = amountController.text;
                   order.save(); // Save changes to the Hive database
                 }
 
@@ -236,7 +246,6 @@ class OrderCard extends StatelessWidget {
     );
   }
 }
-
 class ProductImagesList extends StatelessWidget {
   final List<int> productIds;
 

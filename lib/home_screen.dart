@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:payment/create_order_screen.dart';
+import 'package:payment/order_list_screen.dart';
 import 'package:payment/product_list_screen.dart';
 import 'package:payment/utils.dart';
 import 'package:quick_actions/quick_actions.dart';
@@ -803,103 +804,124 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
-
-  Container itemCard(BuildContext context, Accounts accounts, String initials,
-      List<Product?> filteredProducts) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
+Container itemCard(BuildContext context, Accounts accounts, String initials,
+    List<Product?> filteredProducts) {
+  return Container(
+    margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          elevation: 2,
+          child: ListTile(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => CreateOrderScreen(
+                    account: accounts,
+                  ),
+                ),
+              );
+            },
+            contentPadding: const EdgeInsets.all(16.0),
+            leading: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(accounts.color),
+                border: Border.all(
+                  color: Colors.white,
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
             ),
-            elevation: 2,
-            child: ListTile(
-              onTap: () {
+            title: Text(accounts.merchantName),
+            subtitle: Text(formatUpiId(accounts.upiId)),
+            trailing: SizedBox(
+              width: 96, // Adjust the width as needed
+              child: Row(
+                mainAxisSize: MainAxisSize.min, // Ensures the row does not take up more space than necessary
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.history),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TransactionScreen(
+                            account: accounts,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _showForm(accounts: accounts),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _showAddProductForm(context, accounts),
+              padding: const EdgeInsets.all(8.0),
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_forward),
+              onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => CreateOrderScreen(account: accounts,
-                      
+                    builder: (context) => ProductListScreen(
+                      accounts: accounts,
+                      productBox: productBox,
+                      showEditProductForm: _showEditProductForm,
+                      refreshHomeScreen: _refresh,
                     ),
                   ),
                 );
               },
-              contentPadding: const EdgeInsets.all(16.0),
-              leading: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(accounts.color),
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    initials,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-              ),
-              title: Text(accounts.merchantName),
-              subtitle: Text(formatUpiId(accounts.upiId)),
-              trailing: IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => _showForm(accounts: accounts),
-              ),
+              padding: const EdgeInsets.all(8.0),
             ),
-          ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () => _showAddProductForm(context, accounts),
-                padding: const EdgeInsets.all(8.0),
-              ),
-              IconButton(
-                icon: const Icon(Icons.arrow_forward),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => ProductListScreen(
-                        accounts: accounts,
-                        productBox: productBox,
-                        showEditProductForm: _showEditProductForm,
-                        refreshHomeScreen: _refresh,
-                      ),
-                    ),
-                  );
-                },
-                padding: const EdgeInsets.all(8.0),
-              ),
-            ],
-          ),
-          SizedBox(
-            height: filteredProducts.isNotEmpty ? 110 : 0,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: filteredProducts.length,
-              itemBuilder: (context, index) {
-                final product = filteredProducts[index];
+          ],
+        ),
+        SizedBox(
+          height: filteredProducts.isNotEmpty ? 110 : 0,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: filteredProducts.length,
+            itemBuilder: (context, index) {
+              final product = filteredProducts[index];
 
-                return productTile(product, accounts, () {
-                  setState(() {});
-                });
-              },
-            ),
+              return productTile(product, accounts, () {
+                setState(() {});
+              });
+            },
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   GestureDetector productTile(
       Product? product, Accounts accounts, Function() refreshCallback) {
@@ -908,7 +930,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (product != null) {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => CreateOrderScreen(account: accounts,products: [product],
+              builder: (context) => CreateOrderScreen(
+                account: accounts, products: [product],
                 // Passing the product price as the amount
               ),
             ),

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:payment/transaction_screen.dart';
+import 'package:payment/order_list_screen.dart';
 import 'package:payment/pay.dart';
 import 'package:payment/utils.dart';
 import 'package:qr_flutter/qr_flutter.dart';

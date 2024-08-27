@@ -6,7 +6,9 @@ import 'package:payment/order_detail_screen.dart';
 import 'package:payment/pay.dart';
 
 class TransactionScreen extends StatefulWidget {
-  const TransactionScreen({super.key});
+  final Accounts? account; // Optional account parameter
+
+  const TransactionScreen({super.key, this.account}); // Constructor updated to accept account
 
   @override
   // ignore: library_private_types_in_public_api
@@ -71,17 +73,22 @@ class _TransactionScreenState extends State<TransactionScreen> {
               valueListenable: Hive.box<Order>('orders').listenable(),
               builder: (context, Box<Order> box, _) {
                 final productBox = Hive.box<Product>('products');
-                
                 final orders = box.values.where((order) {
                   final matchesStatus = _selectedStatus == 'all' || order.status == _selectedStatus;
                   
+                  // Filter by account if account is provided
+                  final matchesAccount = widget.account == null || order.products.keys.any((productId) {
+                    // Check if productId is in the account's product list
+                    return widget.account!.productIds.contains(productId);
+                  });
+
                   // Check if any product in the order matches the search query
                   final matchesSearch = _searchQuery.isEmpty || order.products.keys.any((productId) {
                     final product = productBox.get(productId);
                     return product != null && product.name.toLowerCase().contains(_searchQuery);
                   });
 
-                  return matchesStatus && matchesSearch;
+                  return matchesAccount && matchesStatus && matchesSearch;
                 }).toList();
 
                 if (orders.isEmpty) {
@@ -105,6 +112,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
     );
   }
 }
+
 class OrderCard extends StatelessWidget {
   final Order order;
 
@@ -246,6 +254,7 @@ class OrderCard extends StatelessWidget {
     );
   }
 }
+
 class ProductImagesList extends StatelessWidget {
   final List<int> productIds;
 

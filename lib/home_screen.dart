@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:payment/Create.dart';
+import 'package:payment/create_order_screen.dart';
 import 'package:payment/product_list_screen.dart';
 import 'package:payment/utils.dart';
 import 'package:quick_actions/quick_actions.dart';
@@ -819,10 +819,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => CreateOrderScreen(
-                      merchantName: accounts.merchantName,
-                      upiId: accounts.upiId,
-                      amount: 1,
+                    builder: (context) => CreateOrderScreen(account: accounts,
+                      
                     ),
                   ),
                 );
@@ -909,11 +907,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (product != null) {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => CreateOrderScreen(
-                merchantName: accounts.merchantName,
-                upiId: accounts.upiId,
-                amount:
-                    product.price, // Passing the product price as the amount
+              builder: (context) => CreateOrderScreen(account: accounts,products: [product],
+                // Passing the product price as the amount
               ),
             ),
           );

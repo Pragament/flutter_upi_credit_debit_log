@@ -31,6 +31,22 @@ class Order extends HiveObject {
 
   @HiveField(8)
   late DateTime timestamp;
+
+  @HiveField(9)
+  late Map<int, int> products; // New field: productId -> quantity
+
+  Order({
+    required this.orderId,
+    required this.amount,
+    required this.clientNotes,
+    required this.qrCodeUrl,
+    required this.invoiceImageUrl,
+    required this.transactionImageUrl,
+    required this.utrNumber,
+    required this.status,
+    required this.timestamp,
+    required this.products, // Initialize products in the constructor
+  });
 }
 
 @HiveType(typeId: 1)

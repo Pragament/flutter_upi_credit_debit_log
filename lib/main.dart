@@ -4,7 +4,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:payment/MainScreen.dart';
 import 'package:quick_actions/quick_actions.dart';
-import 'package:payment/Create.dart';
+import 'package:payment/create_order_screen.dart';
 import 'package:payment/pay.dart';
 
 // Global key for navigation
@@ -44,10 +44,8 @@ void main() async {
     if (accounts != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
-          builder: (context) => CreateOrderScreen(
-            merchantName: accounts.merchantName,
-            upiId: accounts.upiId,
-            amount: 0, // Default or fetched value
+          builder: (context) => CreateOrderScreen(account: accounts,
+            // Default or fetched value
           ),
         ),
       );
@@ -77,10 +75,8 @@ void main() async {
     if (product != null && accounts.id != -1) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
-          builder: (context) => CreateOrderScreen(
-            merchantName: accounts.merchantName,
-            upiId: accounts.upiId,
-            amount: product.price,
+          builder: (context) => CreateOrderScreen(account: accounts,products: [product],
+            
           ),
         ),
       );

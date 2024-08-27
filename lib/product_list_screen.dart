@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:payment/Create.dart';
+import 'package:payment/create_order_screen.dart';
 import 'package:payment/pay.dart';
 
 class ProductListScreen extends StatefulWidget {
@@ -56,9 +56,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => CreateOrderScreen(
-                merchantName: accounts.merchantName,
-                upiId: accounts.upiId,
-                amount: product.price,
+                account: accounts,products: [product],
               ),
             ),
           );

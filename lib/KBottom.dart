@@ -5,7 +5,7 @@ import 'package:hive/hive.dart';
 import 'package:payment/home_screen.dart';
 import 'package:quick_actions/quick_actions.dart';
 
-import 'package:payment/Create.dart';
+import 'package:payment/create_order_screen.dart';
 import 'package:payment/transaction_screen.dart';
 import 'package:payment/pay.dart';
 
@@ -61,10 +61,7 @@ class _KBottomState extends State<KBottom> {
             quickActions: widget.quickActions, // Pass the QuickActions instance
           ),
           const TransactionScreen(),
-          CreateOrderScreen(
-            merchantName: _merchantName ?? '', // Pass default value if null
-            upiId: _upiId ?? '', amount: 1, // Pass default value if null
-          ),
+          
         ],
       ),
       bottomNavigationBar: AnimatedBottomNavigationBar(

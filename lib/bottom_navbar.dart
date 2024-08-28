@@ -5,7 +5,6 @@ import 'package:hive/hive.dart';
 import 'package:payment/home_screen.dart';
 import 'package:quick_actions/quick_actions.dart';
 
-
 import 'package:payment/order_list_screen.dart';
 import 'package:payment/pay.dart';
 
@@ -35,8 +34,7 @@ class _KBottomState extends State<KBottom> {
     final accounts = accountsBox.get(0);
 
     if (accounts != null) {
-      setState(() {
-      });
+      setState(() {});
     }
   }
 
@@ -57,7 +55,7 @@ class _KBottomState extends State<KBottom> {
             quickActions: widget.quickActions, // Pass the QuickActions instance
           ),
           const TransactionScreen(),
-          
+          const Scaffold(body: Center(child: Text("Settings"),),)
         ],
       ),
       bottomNavigationBar: AnimatedBottomNavigationBar(

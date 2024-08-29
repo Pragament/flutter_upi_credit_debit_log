@@ -44,7 +44,7 @@ void main() async {
     if (accounts != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
-          builder: (context) => CreateOrderScreen(account: accounts,
+          builder: (context) => CreateOrderScreen(account: accounts, onOrderCreated: _refresh,
             // Default or fetched value
           ),
         ),
@@ -75,7 +75,7 @@ void main() async {
     if (product != null && accounts.id != -1) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
-          builder: (context) => CreateOrderScreen(account: accounts,products: [product],
+          builder: (context) => CreateOrderScreen(account: accounts,products: [product], onOrderCreated: _refresh,
             
           ),
         ),
@@ -102,4 +102,7 @@ class MyApp extends StatelessWidget {
           quickActions: quickActions), // Use MainScreen as the initial route
     );
   }
+}
+
+_refresh() {
 }

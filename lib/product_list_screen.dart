@@ -56,7 +56,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => CreateOrderScreen(
-                account: accounts,products: [product],
+                account: accounts,products: [product], onOrderCreated: _refresh,
               ),
             ),
           );

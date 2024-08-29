@@ -821,7 +821,7 @@ Container itemCard(BuildContext context, Accounts accounts, String initials,
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => CreateOrderScreen(
-                    account: accounts,
+                    account: accounts, onOrderCreated: _refresh,
                   ),
                 ),
               );
@@ -931,7 +931,7 @@ Container itemCard(BuildContext context, Accounts accounts, String initials,
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => CreateOrderScreen(
-                account: accounts, products: [product],
+                account: accounts, products: [product], onOrderCreated: _refresh,
                 // Passing the product price as the amount
               ),
             ),

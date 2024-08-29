@@ -1,22 +1,27 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
 import 'package:payment/order_list_screen.dart';
 import 'package:payment/pay.dart';
 import 'package:payment/utils.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 class CreateOrderScreen extends StatefulWidget {
   final Accounts account;
   final List<Product>? products;
+  final Function onOrderCreated;
 
   const CreateOrderScreen({
     Key? key,
     required this.account,
     this.products,
+    required this.onOrderCreated,
   }) : super(key: key);
 
   @override
@@ -614,6 +619,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           .put(accounts.key, accounts);
 
                       Navigator.of(context).pop();
+                     widget.onOrderCreated!();
                     }
                     _refresh();
                   },

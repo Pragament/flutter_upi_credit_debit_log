@@ -411,32 +411,38 @@ class ProductImagesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final productBox = Hive.box<Product>('products');
+return SizedBox(
+  height: 90, // Increased height to accommodate the image and text
+  child: ListView.builder(
+    scrollDirection: Axis.horizontal,
+    itemCount: productIds.length,
+    itemBuilder: (context, index) {
+      final product = productBox.get(productIds[index]);
 
-    return SizedBox(
-      height: 60,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: productIds.length,
-        itemBuilder: (context, index) {
-          final product = productBox.get(productIds[index]);
-
-          return product != null
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Column(
-                    children: [
-                      Image.file(
-                        File(product.imageUrl),
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                      ),
-                    ],
+      return product != null
+          ? Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // Add this to avoid overflow
+                children: [
+                  Image.file(
+                    File(product.imageUrl),
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
                   ),
-                )
-              : const SizedBox();
-        },
-      ),
-    );
+                  Text(
+                    product.name,
+                    style: TextStyle(fontSize: 12), // Adjust font size if needed
+                  ),
+                ],
+              ),
+            )
+          : const SizedBox();
+    },
+  ),
+);
+
+  
   }
 }

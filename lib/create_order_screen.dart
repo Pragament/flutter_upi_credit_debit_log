@@ -333,7 +333,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           return ListTile(
                             title: Text(product.name),
                             subtitle: Text(
-                                'Price: \$${product.price.toStringAsFixed(2)}'),
+                                'Price: ₹${product.price.toStringAsFixed(2)}'),
                             trailing: Checkbox(
                               value: isSelected,
                               onChanged: (bool? value) {
@@ -424,7 +424,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   children: [
                     Text(product.name,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Price: \$${product.price.toStringAsFixed(2)}'),
+                    Text('Price: ₹${product.price.toStringAsFixed(2)}'),
                     Row(
                       children: [
                         IconButton(

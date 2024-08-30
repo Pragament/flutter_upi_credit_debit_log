@@ -335,6 +335,14 @@ void _showProductSelectionDialog() {
                             _selectedProducts.contains(product);
 
                         return ListTile(
+                          leading: SizedBox(
+                            width: 40.0, // Adjust the width as needed
+                            height: 40.0, // Adjust the height as needed
+                            child: Image.file(
+                              File(product.imageUrl),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                           title: Text(product.name),
                           subtitle: Text(
                               'Price: ₹${product.price.toStringAsFixed(2)}'),
@@ -358,7 +366,7 @@ void _showProductSelectionDialog() {
                                 _amountController.text =
                                     _calculateTotalAmount()
                                         .toStringAsFixed(2);
-                                _generateQrCode();  // Add this line
+                                _generateQrCode(); // Add this line
                               });
                             },
                           ),
@@ -378,7 +386,7 @@ void _showProductSelectionDialog() {
                 // Update parent state when dialog closes
                 _amountController.text =
                     _calculateTotalAmount().toStringAsFixed(2);
-                _generateQrCode();  // Add this line
+                _generateQrCode(); // Add this line
               });
               Navigator.of(context).pop();
             },
@@ -409,85 +417,114 @@ void _showProductSelectionDialog() {
       return const SizedBox.shrink();
     }
   }
+Widget _buildSelectedProductList() {
+  if (_selectedProducts.isNotEmpty) {
+    return SizedBox(
+      height: 100.0, // Maintain height as required
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _selectedProducts.length,
+        itemBuilder: (context, index) {
+          final product = _selectedProducts[index];
+          final quantity = _selectedProductQuantities[product] ?? 1;
 
-  Widget _buildSelectedProductList() {
-    if (_selectedProducts.isNotEmpty) {
-      return SizedBox(
-        height: 170.0, // Adjust the height as needed
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: _selectedProducts.length,
-          itemBuilder: (context, index) {
-            final product = _selectedProducts[index];
-            final quantity = _selectedProductQuantities[product] ?? 1;
-
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Constrain the height of the image
-
-                    Text(product.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Price: ₹${product.price.toStringAsFixed(2)}'),
-                    SizedBox(
-                      height: 40.0, // Set a fixed height for the image
-                      width: 40.0, // Set a fixed width for the image
-                      child: Image.file(
-                        File(product.imageUrl),
-                        fit: BoxFit.cover,
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 8.0), // Reduced margin
+            child: Container(
+              padding: const EdgeInsets.all(8.0), // Reduce padding even further
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // Minimize extra space
+                crossAxisAlignment: CrossAxisAlignment.start, // Align content to the start
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center, // Center-align within row
+                    children: [
+                      SizedBox(
+                        height: 50.0, // Reduced height for the image
+                        width: 50.0, // Reduced width for the image
+                        child: Image.file(
+                          File(product.imageUrl),
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    ),
-                    Row(
+                      const SizedBox(width: 2.0), // Minimal gap
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start, // Align text to the start
+                        children: [
+                          Text(
+                            product.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10.0, // Reduced font size
+                            ),
+                          ),
+                          Text(
+                            '₹${product.price.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 10.0, // Smaller font size
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start, // Align buttons to start
                       children: [
                         IconButton(
+                          iconSize: 14.0, // Further reduced icon size
+                          padding: EdgeInsets.zero, // Remove padding around icon button
+                          constraints: const BoxConstraints(), // Remove constraints to fit better
                           icon: const Icon(Icons.remove),
                           onPressed: () {
                             setState(() {
                               if (quantity > 1) {
-                                _selectedProductQuantities[product] =
-                                    quantity - 1;
+                                _selectedProductQuantities[product] = quantity - 1;
                               } else {
                                 _selectedProducts.remove(product);
                                 _selectedProductQuantities.remove(product);
                               }
-                              _amountController.text =
-                                  _calculateTotalAmount().toStringAsFixed(2);
+                              _amountController.text = _calculateTotalAmount().toStringAsFixed(2);
                               _generateQrCode();
                             });
                           },
                         ),
-                        Text(quantity.toString()),
+                        Text(
+                          quantity.toString(),
+                          style: const TextStyle(fontSize: 10.0), // Reduced font size
+                        ),
                         IconButton(
+                          iconSize: 14.0, // Further reduced icon size
+                          padding: EdgeInsets.zero, // Remove padding around icon button
+                          constraints: const BoxConstraints(), // Remove constraints to fit better
                           icon: const Icon(Icons.add),
                           onPressed: () {
                             setState(() {
-                              _selectedProductQuantities[product] =
-                                  quantity + 1;
-                              _amountController.text =
-                                  _calculateTotalAmount().toStringAsFixed(2);
+                              _selectedProductQuantities[product] = quantity + 1;
+                              _amountController.text = _calculateTotalAmount().toStringAsFixed(2);
                               _generateQrCode();
                             });
                           },
                         ),
                       ],
                     ),
-                    Text(
-                        'Total: ₹${(product.price * quantity).toStringAsFixed(2)}'),
-                  ],
-                ),
+                  ),
+                  Text(
+                    'Total: ₹${(product.price * quantity).toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 10.0), // Smaller font size
+                  ),
+                ],
               ),
-            );
-          },
-        ),
-      );
-    } else {
-      return const Text('No products selected');
-    }
+            ),
+          );
+        },
+      ),
+    );
+  } else {
+    return const Text('No products selected');
   }
+}
 
   Widget _buildImagePicker(String? imagePath, bool isInvoice) {
     return GestureDetector(

@@ -412,7 +412,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   Widget _buildSelectedProductList() {
     if (_selectedProducts.isNotEmpty) {
       return SizedBox(
-        height: 110.0,
+        height: 170.0, // Adjust the height as needed
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           itemCount: _selectedProducts.length,
@@ -425,11 +425,21 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Constrain the height of the image
+
                     Text(product.name,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                     Text('Price: ₹${product.price.toStringAsFixed(2)}'),
+                    SizedBox(
+                      height: 40.0, // Set a fixed height for the image
+                      width: 40.0, // Set a fixed width for the image
+                      child: Image.file(
+                        File(product.imageUrl),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                     Row(
                       children: [
                         IconButton(
@@ -462,6 +472,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         ),
                       ],
                     ),
+                    Text(
+                        'Total: ₹${(product.price * quantity).toStringAsFixed(2)}'),
                   ],
                 ),
               ),
@@ -619,7 +631,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           .put(accounts.key, accounts);
 
                       Navigator.of(context).pop();
-                     widget.onOrderCreated!();
+                      widget.onOrderCreated();
+                      _selectedProducts.add(newProduct);
                     }
                     _refresh();
                   },

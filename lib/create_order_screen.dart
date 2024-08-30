@@ -274,120 +274,121 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       );
     }
   }
+void _showProductSelectionDialog() {
+  TextEditingController searchController = TextEditingController();
+  List<Product> filteredProducts =
+      List.from(_products!); // Initialize filtered products
 
-  void _showProductSelectionDialog() {
-    TextEditingController searchController = TextEditingController();
-    List<Product> filteredProducts =
-        List.from(_products!); // Initialize filtered products
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        // Using StatefulBuilder to manage the dialog's internal state
-        return AlertDialog(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Select Products'),
-              IconButton(
-                icon: const Icon(Icons.add), // Add plus icon here
-                onPressed: () {
-                  Navigator.of(context)
-                      .pop(); // Close the current dialog before opening the new one
-                  _showAddProductForm(
-                      context, _account); // Call the add product form
-                },
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: StatefulBuilder(
-              builder: (BuildContext context, StateSetter dialogSetState) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Add Search Bar
-                    TextField(
-                      controller: searchController,
-                      decoration: const InputDecoration(
-                        labelText: 'Search',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                      onChanged: (value) {
-                        // Update the filtered products based on the search input
-                        dialogSetState(() {
-                          filteredProducts = _products!.where((product) {
-                            return product.name
-                                .toLowerCase()
-                                .contains(value.toLowerCase());
-                          }).toList();
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8.0),
-                    Expanded(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: filteredProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = filteredProducts[index];
-                          final isSelected =
-                              _selectedProducts.contains(product);
-
-                          return ListTile(
-                            title: Text(product.name),
-                            subtitle: Text(
-                                'Price: ₹${product.price.toStringAsFixed(2)}'),
-                            trailing: Checkbox(
-                              value: isSelected,
-                              onChanged: (bool? value) {
-                                dialogSetState(() {
-                                  if (value == true) {
-                                    if (!_selectedProducts.contains(product)) {
-                                      _selectedProducts.add(product);
-                                      _selectedProductQuantities[product] = 1;
-                                    }
-                                  } else {
-                                    _selectedProducts.remove(product);
-                                    _selectedProductQuantities.remove(product);
-                                  }
-                                });
-
-                                // Update parent state when product selection changes
-                                setState(() {
-                                  _amountController.text =
-                                      _calculateTotalAmount()
-                                          .toStringAsFixed(2);
-                                });
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
+  showDialog(
+    context: context,
+    builder: (context) {
+      // Using StatefulBuilder to manage the dialog's internal state
+      return AlertDialog(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Select Products'),
+            IconButton(
+              icon: const Icon(Icons.add), // Add plus icon here
               onPressed: () {
-                setState(() {
-                  // Update parent state when dialog closes
-                  _amountController.text =
-                      _calculateTotalAmount().toStringAsFixed(2);
-                });
-                Navigator.of(context).pop();
+                Navigator.of(context)
+                    .pop(); // Close the current dialog before opening the new one
+                _showAddProductForm(
+                    context, _account); // Call the add product form
               },
-              child: const Text('Done'),
             ),
           ],
-        );
-      },
-    );
-  }
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter dialogSetState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Add Search Bar
+                  TextField(
+                    controller: searchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Search',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (value) {
+                      // Update the filtered products based on the search input
+                      dialogSetState(() {
+                        filteredProducts = _products!.where((product) {
+                          return product.name
+                              .toLowerCase()
+                              .contains(value.toLowerCase());
+                        }).toList();
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8.0),
+                  Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: filteredProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = filteredProducts[index];
+                        final isSelected =
+                            _selectedProducts.contains(product);
+
+                        return ListTile(
+                          title: Text(product.name),
+                          subtitle: Text(
+                              'Price: ₹${product.price.toStringAsFixed(2)}'),
+                          trailing: Checkbox(
+                            value: isSelected,
+                            onChanged: (bool? value) {
+                              dialogSetState(() {
+                                if (value == true) {
+                                  if (!_selectedProducts.contains(product)) {
+                                    _selectedProducts.add(product);
+                                    _selectedProductQuantities[product] = 1;
+                                  }
+                                } else {
+                                  _selectedProducts.remove(product);
+                                  _selectedProductQuantities.remove(product);
+                                }
+                              });
+
+                              // Update parent state when product selection changes
+                              setState(() {
+                                _amountController.text =
+                                    _calculateTotalAmount()
+                                        .toStringAsFixed(2);
+                                _generateQrCode();  // Add this line
+                              });
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                // Update parent state when dialog closes
+                _amountController.text =
+                    _calculateTotalAmount().toStringAsFixed(2);
+                _generateQrCode();  // Add this line
+              });
+              Navigator.of(context).pop();
+            },
+            child: const Text('Done'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   Widget _buildQRCodeWidget() {
     if (_qrCodeData != null) {
@@ -455,6 +456,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                               }
                               _amountController.text =
                                   _calculateTotalAmount().toStringAsFixed(2);
+                              _generateQrCode();
                             });
                           },
                         ),
@@ -467,6 +469,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                   quantity + 1;
                               _amountController.text =
                                   _calculateTotalAmount().toStringAsFixed(2);
+                              _generateQrCode();
                             });
                           },
                         ),
@@ -633,7 +636,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       Navigator.of(context).pop();
                       widget.onOrderCreated();
                       _selectedProducts.add(newProduct);
+                      _generateQrCode();
                     }
+
                     _refresh();
                   },
                   child: const Text('Save'),
@@ -714,6 +719,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     onChanged: (bool? value) {
                       setState(() {
                         _includeAmountInQr = value ?? false;
+                        _generateQrCode();
                       });
                     },
                   ),
@@ -748,10 +754,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 ),
               ),
               const SizedBox(height: 16.0),
-              ElevatedButton(
-                onPressed: _generateQrCode,
-                child: const Text('Generate QR Code'),
-              ),
+              // ElevatedButton(
+              //   onPressed: _generateQrCode,
+              //   child: const Text('Generate QR Code'),
+              // ),
               const SizedBox(height: 16.0),
               ElevatedButton(
                 onPressed: _uploadOrder,

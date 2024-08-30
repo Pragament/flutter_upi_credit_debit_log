@@ -105,13 +105,11 @@ Widget build(BuildContext context) {
 
 
 
-
 Future<pw.Document> _generatePdf(Order order) async {
   final pdf = pw.Document();
   final productBox = Hive.box<Product>('products');
   final accountsBox = Hive.box<Accounts>('accounts');
-  String? bgShape =
-      await rootBundle.loadString('assets/invoice.svg'); // Load SVG
+  String? bgShape = await rootBundle.loadString('assets/invoice.svg'); // Load SVG
 
   final int maxRowsPerPage = 10; // Adjust this value based on your needs
 
@@ -121,8 +119,7 @@ Future<pw.Document> _generatePdf(Order order) async {
 
   List<pw.TableRow> _buildTableRows(List<String> productIds) {
     return productIds.map((productId) {
-      final product =
-          productBox.get(int.parse(productId)); // Convert back to int
+      final product = productBox.get(int.parse(productId)); // Convert back to int
       final quantity = order.products[int.parse(productId)];
       final totalPrice = product != null ? product.price * quantity! : 0.0;
 
@@ -138,8 +135,17 @@ Future<pw.Document> _generatePdf(Order order) async {
         children: [
           pw.Padding(
             padding: const pw.EdgeInsets.all(8.0),
-            child: pw.Text(product?.name ?? 'N/A',
-                textAlign: pw.TextAlign.center),
+            child: product?.imageUrl != null
+                ? pw.Image(
+                    pw.MemoryImage(File(product!.imageUrl).readAsBytesSync()),
+                    width: 50, // Adjust the size as needed
+                    height: 50,
+                  )
+                : pw.Text('No Image', textAlign: pw.TextAlign.center),
+          ),
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(8.0),
+            child: pw.Text(product?.name ?? 'N/A', textAlign: pw.TextAlign.center),
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.all(8.0),
@@ -255,6 +261,15 @@ Future<pw.Document> _generatePdf(Order order) async {
                           top: pw.Radius.circular(10)),
                     ),
                     children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8.0),
+                        child: pw.Text('Image',
+                            style: pw.TextStyle(
+                                fontSize: 14,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.white),
+                            textAlign: pw.TextAlign.center),
+                      ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8.0),
                         child: pw.Text('Product',

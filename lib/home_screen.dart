@@ -56,6 +56,15 @@ class _HomeScreenState extends State<HomeScreen> {
   void _toggleSortOrder() {
     setState(() {
       _isAscending = !_isAscending;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isAscending
+                ? 'Sorting by account in ascending order'
+                : 'Sorting by account in descending order',
+          ),
+        ),
+      );
     });
   }
 
@@ -95,7 +104,7 @@ void _showForm({Accounts? accounts}) {
   } else {
     _merchantNameController.clear();
     _upiIdController.clear();
-    _currency = 'INR'; // Set default currency
+    _currency = ''; // Set default currency
     _selectedColor = Colors.blue;
     _createShortcut = false;
   }
@@ -114,6 +123,11 @@ void _showForm({Accounts? accounts}) {
         builder: (BuildContext context, StateSetter setState) {
           // List of currencies
           final List<String> currencies = ['INR'];
+
+          // Ensure _currency is in the list of currencies
+          if (_currency.isEmpty || !currencies.contains(_currency)) {
+            _currency = currencies.first; // Default to the first item if not found
+          }
 
           // Move the _pickColor method inside the builder
           void pickColor() async {
@@ -144,7 +158,8 @@ void _showForm({Accounts? accounts}) {
               children: [
                 TextField(
                   controller: _merchantNameController,
-                  decoration: const InputDecoration(labelText: 'Merchant Name'),
+                  decoration:
+                      const InputDecoration(labelText: 'Merchant Name'),
                 ),
                 const SizedBox(height: 16.0),
                 TextField(
@@ -737,6 +752,15 @@ void _showForm({Accounts? accounts}) {
           onPressed: () {
             setState(() {
               _showArchived = !_showArchived;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _showArchived
+                        ? 'Showing archived accounts & products'
+                        : 'Hiding archived accounts & products',
+                  ),
+                ),
+              );
             });
           },
         ),

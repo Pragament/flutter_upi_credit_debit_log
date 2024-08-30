@@ -7,20 +7,19 @@ import 'package:payment/pay.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class TransactionScreen extends StatefulWidget {
-  final Accounts? account; // Optional account parameter
+  final Accounts? account;
 
-  const TransactionScreen(
-      {super.key, this.account}); // Constructor updated to accept account
+  const TransactionScreen({super.key, this.account});
 
   @override
   _TransactionScreenState createState() => _TransactionScreenState();
 }
 
 class _TransactionScreenState extends State<TransactionScreen> {
-  String _selectedStatus = 'all'; // Default to 'all'
-  String _searchQuery = ''; // Default to empty search query
-  DateTime? _startDate; // Start date for the date range
-  DateTime? _endDate; // End date for the date range
+  String _selectedStatus = 'all';
+  String _searchQuery = '';
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   @override
   Widget build(BuildContext context) {
@@ -30,27 +29,29 @@ class _TransactionScreenState extends State<TransactionScreen> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.toLowerCase();
+                });
+              },
+              decoration: const InputDecoration(
+                hintText: 'Search by product...',
+                hintStyle: TextStyle(color: Colors.black54),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+
           // Search, Filter, and Date Picker Section
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
                 // Search Bar
-                Expanded(
-                  child: TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery =
-                            value.toLowerCase(); // Update search query
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      hintText: 'Search by product...',
-                      hintStyle: TextStyle(color: Colors.black54),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
+
                 const SizedBox(width: 16),
                 // Status Filter Dropdown
                 DropdownButton<String>(
@@ -77,9 +78,35 @@ class _TransactionScreenState extends State<TransactionScreen> {
                     _showDateRangePicker(context);
                   },
                 ),
+                if (_startDate != null && _endDate != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 1.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${DateFormat('d MMM, yy').format(_startDate!)} -'
+                          '${DateFormat('d MMM, yy').format(_endDate!)}',
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _startDate = null;
+                              _endDate = null;
+                            });
+                          },
+                          icon: Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
+          // Display Selected Date Range and Clear Button
+
           // Orders List
           Expanded(
             child: ValueListenableBuilder(
@@ -90,14 +117,11 @@ class _TransactionScreenState extends State<TransactionScreen> {
                   final matchesStatus = _selectedStatus == 'all' ||
                       order.status == _selectedStatus;
 
-                  // Filter by account if account is provided
                   final matchesAccount = widget.account == null ||
                       order.products.keys.any((productId) {
-                        // Check if productId is in the account's product list
                         return widget.account!.productIds.contains(productId);
                       });
 
-                  // Check if any product in the order matches the search query
                   final matchesSearch = _searchQuery.isEmpty ||
                       order.products.keys.any((productId) {
                         final product = productBox.get(productId);
@@ -105,7 +129,6 @@ class _TransactionScreenState extends State<TransactionScreen> {
                             product.name.toLowerCase().contains(_searchQuery);
                       });
 
-                  // Check if order timestamp is within the selected date range
                   final matchesDate = (_startDate == null ||
                           order.timestamp.isAfter(_startDate!)) &&
                       (_endDate == null || order.timestamp.isBefore(_endDate!));
@@ -143,10 +166,8 @@ class _TransactionScreenState extends State<TransactionScreen> {
       builder: (context) {
         DateTime? tempStartDate = _startDate;
         DateTime? tempEndDate = _endDate;
-        Map<DateTime, List<Order>> ordersPerDay =
-            {}; // To hold the orders per day
+        Map<DateTime, List<Order>> ordersPerDay = {};
 
-        // Calculate the orders for each day
         final orders = Hive.box<Order>('orders').values;
         print('Total orders in Hive box: ${orders.length}');
         for (var order in orders) {
@@ -197,8 +218,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                         if (tempStartDate == null ||
                             (tempStartDate != null && tempEndDate != null)) {
                           tempStartDate = selectedDay;
-                          tempEndDate =
-                              null; // Reset the end date if both are already selected
+                          tempEndDate = null;
                         } else if (tempEndDate == null) {
                           tempEndDate = selectedDay;
                         }
@@ -209,21 +229,19 @@ class _TransactionScreenState extends State<TransactionScreen> {
                         if (events.isNotEmpty) {
                           return Positioned(
                             bottom: 0,
-                            right: 2.0, // Adjust the right offset as needed
+                            right: 2.0,
                             child: Container(
                               decoration: const BoxDecoration(
                                 color: Colors.blue,
                                 shape: BoxShape.circle,
                               ),
-                              padding: const EdgeInsets.all(
-                                  6.0), // Adjust padding for increased size
+                              padding: const EdgeInsets.all(6.0),
                               child: Center(
                                 child: Text(
                                   '${events.length}',
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize:
-                                        14.0, // Adjust font size as needed
+                                    fontSize: 14.0,
                                   ),
                                 ),
                               ),
@@ -241,8 +259,8 @@ class _TransactionScreenState extends State<TransactionScreen> {
                       setState(() {
                         _startDate = tempStartDate;
                         _endDate = tempEndDate;
-                      }); // Refresh the list with the selected date range
-                      Navigator.pop(context); // Close the bottom sheet
+                      });
+                      Navigator.pop(context);
                     },
                     child: const Text('Apply Date Filter'),
                   ),
@@ -378,11 +396,10 @@ class OrderCard extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () {
-                // Update the order with new data
                 if (selectedStatus != null) {
                   order.status = selectedStatus!;
                   order.amount = amountController.text;
-                  order.save(); // Save changes to the Hive database
+                  order.save();
                 }
 
                 Navigator.pop(context);
@@ -391,7 +408,7 @@ class OrderCard extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close the dialog
+                Navigator.pop(context);
               },
               child: const Text('Cancel'),
             ),
@@ -411,38 +428,36 @@ class ProductImagesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final productBox = Hive.box<Product>('products');
-return SizedBox(
-  height: 90, // Increased height to accommodate the image and text
-  child: ListView.builder(
-    scrollDirection: Axis.horizontal,
-    itemCount: productIds.length,
-    itemBuilder: (context, index) {
-      final product = productBox.get(productIds[index]);
+    return SizedBox(
+      height: 90,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: productIds.length,
+        itemBuilder: (context, index) {
+          final product = productBox.get(productIds[index]);
 
-      return product != null
-          ? Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min, // Add this to avoid overflow
-                children: [
-                  Image.file(
-                    File(product.imageUrl),
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
+          return product != null
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.file(
+                        File(product.imageUrl),
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                      ),
+                      Text(
+                        product.name,
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
                   ),
-                  Text(
-                    product.name,
-                    style: TextStyle(fontSize: 12), // Adjust font size if needed
-                  ),
-                ],
-              ),
-            )
-          : const SizedBox();
-    },
-  ),
-);
-
-  
+                )
+              : const SizedBox();
+        },
+      ),
+    );
   }
 }

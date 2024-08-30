@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:payment/KBottom.dart';
-import 'HomeScreen.dart';
+import 'package:quick_actions/quick_actions.dart';
+import 'package:payment/bottom_navbar.dart';
 
 class MainScreen extends StatelessWidget {
+  final QuickActions quickActions;
+
   final LocalAuthentication auth = LocalAuthentication();
+
+  MainScreen({super.key, required this.quickActions});
 
   @override
   Widget build(BuildContext context) {
@@ -20,8 +24,9 @@ class MainScreen extends StatelessWidget {
             body: Center(child: Text('Authentication failed')),
           );
         } else {
-          return KBottom();
+          return KBottom(quickActions: quickActions);
         }
+        //return KBottom(quickActions: quickActions);
       },
     );
   }
@@ -37,12 +42,10 @@ class MainScreen extends StatelessWidget {
           options: const AuthenticationOptions(biometricOnly: true),
         );
       } else {
-        print('Biometric authentication is not available on this device.');
       }
 
       return isAuthenticated;
     } catch (e) {
-      print('Error during authentication: $e');
       return false;
     }
   }

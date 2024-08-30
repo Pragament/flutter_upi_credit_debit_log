@@ -1,12 +1,19 @@
+import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
-import 'package:payment/Create.dart';
-import 'package:payment/HomeScreen.dart';
-import 'package:payment/SettingScreen.dart';
+import 'package:hive/hive.dart';
+import 'package:payment/home_screen.dart';
+import 'package:quick_actions/quick_actions.dart';
+
+import 'package:payment/order_list_screen.dart';
+import 'package:payment/pay.dart';
 
 class KBottom extends StatefulWidget {
-  const KBottom({Key? key}) : super(key: key);
+  final QuickActions quickActions;
+  const KBottom({
+    Key? key,
+    required this.quickActions,
+  }) : super(key: key);
 
   @override
   State<KBottom> createState() => _KBottomState();
@@ -15,6 +22,21 @@ class KBottom extends StatefulWidget {
 class _KBottomState extends State<KBottom> {
   int _bottomNavIndex = 0;
   final PageController _pageController = PageController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadaccounts();
+  }
+
+  Future<void> _loadaccounts() async {
+    final accountsBox = Hive.box<Accounts>('accounts');
+    final accounts = accountsBox.get(0);
+
+    if (accounts != null) {
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +48,19 @@ class _KBottomState extends State<KBottom> {
             _bottomNavIndex = index;
           });
         },
-        children: const [
-          HomeScreen(),      // Replace with your Home screen widget
-          CreateOrderScreen(), // Replace with your Create screen widget
-          SettingsScreen(),   // Replace with your Settings screen widget
+        children: [
+          // Replace with your Home screen widget
+
+          HomeScreen(
+            quickActions: widget.quickActions, // Pass the QuickActions instance
+          ),
+          const TransactionScreen(),
+          const Scaffold(body: Center(child: Text("Settings"),),)
         ],
       ),
-
       bottomNavigationBar: AnimatedBottomNavigationBar(
-        backgroundColor: Colors.blue.withOpacity(0.50), // Update with your color
+        backgroundColor:
+            Colors.blue.withOpacity(0.50), // Update with your color
         elevation: 0,
         splashColor: Colors.green, // Update with your color
         icons: const [
@@ -45,7 +71,6 @@ class _KBottomState extends State<KBottom> {
         inactiveColor: Colors.white, // Update with your color
         activeColor: Colors.yellow, // Update with your color
         activeIndex: _bottomNavIndex,
-        // gapWidth: 50,
         notchSmoothness: NotchSmoothness.smoothEdge,
         leftCornerRadius: 0,
         rightCornerRadius: 0,

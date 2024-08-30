@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+// For getting application documents directory
 
 part 'pay.g.dart';
 
@@ -30,18 +31,101 @@ class Order extends HiveObject {
 
   @HiveField(8)
   late DateTime timestamp;
+
+  @HiveField(9)
+  late Map<int, int> products; // New field: productId -> quantity
+
+  Order({
+    required this.orderId,
+    required this.amount,
+    required this.clientNotes,
+    required this.qrCodeUrl,
+    required this.invoiceImageUrl,
+    required this.transactionImageUrl,
+    required this.utrNumber,
+    required this.status,
+    required this.timestamp,
+    required this.products, // Initialize products in the constructor
+  });
 }
 
 @HiveType(typeId: 1)
-class Settings extends HiveObject {
+class Accounts extends HiveObject {
   @HiveField(0)
-  late String merchantName;
+  late int id;
 
   @HiveField(1)
-  late String upiId;
+  late String merchantName;
 
   @HiveField(2)
+  late String upiId;
+
+  @HiveField(3)
   late String currency;
 
-  Settings({required this.merchantName, required this.upiId, required this.currency});
+  @HiveField(4)
+  late int color;
+
+  @HiveField(5)
+  late bool createShortcut;
+
+  @HiveField(6)
+  late bool archived; // New field to indicate if the account is archived
+
+  @HiveField(7)
+  DateTime?
+      archiveDate; // New field to store the date when the account was archived
+
+  @HiveField(8)
+  late List<int> productIds; // List of product IDs
+
+  Accounts({
+    required this.id,
+    required this.merchantName,
+    required this.upiId,
+    required this.currency,
+    required this.color,
+    this.createShortcut = false,
+    this.archived = false,
+    this.archiveDate,
+    required this.productIds,
+  });
+}
+
+@HiveType(typeId: 2)
+class Product extends HiveObject {
+  @HiveField(0)
+  late int id;
+
+  @HiveField(1)
+  late String name;
+
+  @HiveField(2)
+  late double price;
+
+  @HiveField(3)
+  late String description;
+
+  @HiveField(4)
+  late String imageUrl;
+
+  @HiveField(5)
+  bool archived = false; // New field
+
+  @HiveField(6)
+  DateTime? archiveDate; // New field
+
+  @HiveField(7)
+  bool createShortcut = false; // New field
+
+  Product({
+    required this.id,
+    required this.name,
+    required this.price,
+    required this.description,
+    required this.imageUrl,
+    this.archived = false, // Default value
+    this.archiveDate,
+    this.createShortcut = false, // Default value
+  });
 }

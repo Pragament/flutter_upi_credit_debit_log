@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:payment/pay.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
@@ -10,6 +10,7 @@ class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({Key? key}) : super(key: key);
 
   @override
+  // ignore: library_private_types_in_public_api
   _QrScannerScreenState createState() => _QrScannerScreenState();
 }
 
@@ -34,42 +35,44 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     super.dispose();
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) async {
-      setState(() {
-        qrCodeResult = scanData.code;
-      });
-
-      // Save the scanned QR code result to Hive database
-      if (qrCodeResult != null) {
-        final directory = await getApplicationDocumentsDirectory();
-        await Hive.initFlutter(directory.path);
-
-        final orderBox = Hive.box<Order>('orders');
-
-        final newOrder = Order()
-          ..orderId = DateTime.now().millisecondsSinceEpoch.toString()
-          ..amount = '0'
-          ..clientNotes = ''
-          ..qrCodeUrl = qrCodeResult!
-          ..invoiceImageUrl = ''
-          ..transactionImageUrl = ''
-          ..utrNumber = ''
-          ..status = 'pending'
-          ..timestamp = DateTime.now();
-
-        await orderBox.add(newOrder);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('QR Code saved successfully')),
-        );
-      }
-
-      // Navigate back to the previous screen with the scanned result
-      Navigator.pop(context, qrCodeResult);
+ void _onQRViewCreated(QRViewController controller) {
+  this.controller = controller;
+  controller.scannedDataStream.listen((scanData) async {
+    setState(() {
+      qrCodeResult = scanData.code;
     });
-  }
+
+    // Save the scanned QR code result to Hive database
+    if (qrCodeResult != null) {
+      final directory = await getApplicationDocumentsDirectory();
+      await Hive.initFlutter(directory.path);
+
+      final orderBox = Hive.box<Order>('orders');
+
+      final newOrder = Order(
+        orderId: DateTime.now().millisecondsSinceEpoch.toString(),
+        amount: '0',
+        clientNotes: '',
+        qrCodeUrl: qrCodeResult!,
+        invoiceImageUrl: '',
+        transactionImageUrl: '',
+        utrNumber: '',
+        status: 'pending',
+        timestamp: DateTime.now(),
+        products: {}, // or provide an initial map if needed
+      );
+
+      await orderBox.add(newOrder);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('QR Code saved successfully')),
+      );
+    }
+
+    // Navigate back to the previous screen with the scanned result
+    Navigator.pop(context, qrCodeResult);
+  });
+}
 
   @override
   Widget build(BuildContext context) {

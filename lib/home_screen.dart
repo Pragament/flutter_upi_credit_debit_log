@@ -30,7 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ValueNotifier<String> _searchQueryNotifier = ValueNotifier<String>('');
   bool _isAscending = true;
-  bool _showArchived = false; // Add this state variable
+  bool _showArchived = false;
+
+  String _currency = "INR"; // Add this state variable
 
   @override
   void initState() {
@@ -83,174 +85,196 @@ class _HomeScreenState extends State<HomeScreen> {
       return accountMatches || productMatches;
     }).toList();
   }
+void _showForm({Accounts? accounts}) {
+  if (accounts != null) {
+    _merchantNameController.text = accounts.merchantName;
+    _upiIdController.text = accounts.upiId;
+    _currency = accounts.currency; // Update to use _currency
+    _selectedColor = Color(accounts.color);
+    _createShortcut = accounts.createShortcut;
+  } else {
+    _merchantNameController.clear();
+    _upiIdController.clear();
+    _currency = 'INR'; // Set default currency
+    _selectedColor = Colors.blue;
+    _createShortcut = false;
+  }
 
-  void _showForm({Accounts? accounts}) {
-    if (accounts != null) {
-      _merchantNameController.text = accounts.merchantName;
-      _upiIdController.text = accounts.upiId;
-      _currencyController.text = accounts.currency;
-      _selectedColor = Color(accounts.color);
-      _createShortcut = accounts.createShortcut;
-    } else {
-      _merchantNameController.clear();
-      _upiIdController.clear();
-      _currencyController.clear();
-      _selectedColor = Colors.blue;
-      _createShortcut = false;
-    }
+  final bool isArchived = accounts?.archived ?? false;
+  final DateTime? archiveDate = accounts?.archiveDate;
+  final bool isDeletable = !isArchived ||
+      (archiveDate != null &&
+          DateTime.now().difference(archiveDate).inDays >= 30);
 
-    final bool isArchived = accounts?.archived ?? false;
-    final DateTime? archiveDate = accounts?.archiveDate;
-    final bool isDeletable = !isArchived ||
-        (archiveDate != null &&
-            DateTime.now().difference(archiveDate).inDays >= 30);
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text(accounts == null ? 'Add accounts' : 'Edit accounts'),
+      content: StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          // List of currencies
+          final List<String> currencies = ['INR'];
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(accounts == null ? 'Add accounts' : 'Edit accounts'),
-        content: StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            // Move the _pickColor method inside the builder
-            void pickColor() async {
-              final Color? color = await showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Pick a color'),
-                  content: SingleChildScrollView(
-                    child: BlockPicker(
-                      pickerColor: _selectedColor,
-                      onColorChanged: (Color color) {
-                        setState(() => _selectedColor = color); // Update state
-                        Navigator.of(context).pop(color);
-                      },
-                    ),
+          // Move the _pickColor method inside the builder
+          void pickColor() async {
+            final Color? color = await showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Pick a color'),
+                content: SingleChildScrollView(
+                  child: BlockPicker(
+                    pickerColor: _selectedColor,
+                    onColorChanged: (Color color) {
+                      setState(() => _selectedColor = color); // Update state
+                      Navigator.of(context).pop(color);
+                    },
                   ),
                 ),
-              );
+              ),
+            );
 
-              if (color != null) {
-                setState(() => _selectedColor = color); // Update state
-              }
+            if (color != null) {
+              setState(() => _selectedColor = color); // Update state
             }
+          }
 
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: _merchantNameController,
-                    decoration:
-                        const InputDecoration(labelText: 'Merchant Name'),
-                  ),
-                  const SizedBox(height: 16.0),
-                  TextField(
-                    controller: _upiIdController,
-                    decoration: const InputDecoration(labelText: 'UPI ID'),
-                  ),
-                  const SizedBox(height: 16.0),
-                  TextField(
-                    controller: _currencyController,
-                    decoration: const InputDecoration(labelText: 'Currency'),
-                  ),
-                  const SizedBox(height: 16.0),
-                  Row(
-                    children: [
-                      const Text('Choose Color:'),
-                      const SizedBox(width: 8.0),
-                      GestureDetector(
-                        onTap: pickColor,
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          color: _selectedColor,
-                        ),
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _merchantNameController,
+                  decoration: const InputDecoration(labelText: 'Merchant Name'),
+                ),
+                const SizedBox(height: 16.0),
+                TextField(
+                  controller: _upiIdController,
+                  decoration: const InputDecoration(labelText: 'UPI ID'),
+                ),
+                const SizedBox(height: 16.0),
+                // Row with DropdownButton and Text
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Currency:',
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
-                    ],
-                  ),
+                    ),
+                    DropdownButton<String>(
+                      value: _currency,
+                      items: currencies.map((String currency) {
+                        return DropdownMenuItem<String>(
+                          value: currency,
+                          child: Text(currency),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _currency = newValue!;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+                Row(
+                  children: [
+                    const Text('Choose Color:'),
+                    const SizedBox(width: 8.0),
+                    GestureDetector(
+                      onTap: pickColor,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        color: _selectedColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _createShortcut,
+                      onChanged: (value) {
+                        setState(() {
+                          _createShortcut = value!;
+                        });
+                      },
+                    ),
+                    const Text('Create Shortcut'),
+                  ],
+                ),
+                if (accounts != null) ...[
                   const SizedBox(height: 16.0),
                   Row(
                     children: [
                       Checkbox(
-                        value: _createShortcut,
+                        value: accounts.archived,
                         onChanged: (value) {
                           setState(() {
-                            _createShortcut = value!;
+                            accounts.archived = value!;
+                            accounts.archiveDate =
+                                value ? DateTime.now() : null;
                           });
                         },
                       ),
-                      const Text('Create Shortcut'),
+                      const Text('Archived'),
                     ],
                   ),
-                  if (accounts != null) ...[
-                    const SizedBox(height: 16.0),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: accounts.archived,
-                          onChanged: (value) {
-                            setState(() {
-                              accounts.archived = value!;
-                              accounts.archiveDate =
-                                  value ? DateTime.now() : null;
-                            });
-                          },
-                        ),
-                        const Text('Archived'),
-                      ],
-                    ),
-                  ],
                 ],
-              ),
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          accounts != null
-              ? TextButton(
-                  onPressed: () {
-                    if (!isDeletable) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'You cannot delete this account until 30 days have passed since archiving.'),
-                        ),
-                      );
-                    } else {
-                      _deleteaccounts(accounts);
-                    }
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(
-                    'Delete',
-                    style: TextStyle(
-                      color: isDeletable ? Colors.red : Colors.grey,
-                    ),
-                  ),
-                )
-              : const SizedBox(
-                  height: 0,
-                  width: 0,
-                ),
-          TextButton(
-            onPressed: () {
-              if (accounts == null) {
-                _addaccounts();
-              } else {
-                _updateaccounts(accounts);
-              }
-              Navigator.of(context).pop();
-            },
-            child: const Text('Save'),
-          ),
-        ],
+              ],
+            ),
+          );
+        },
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        accounts != null
+            ? TextButton(
+                onPressed: () {
+                  if (!isDeletable) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'You cannot delete this account until 30 days have passed since archiving.'),
+                      ),
+                    );
+                  } else {
+                    _deleteaccounts(accounts);
+                  }
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  'Delete',
+                  style: TextStyle(
+                    color: isDeletable ? Colors.red : Colors.grey,
+                  ),
+                ),
+              )
+            : const SizedBox(
+                height: 0,
+                width: 0,
+              ),
+        TextButton(
+          onPressed: () {
+            if (accounts == null) {
+              _addaccounts();
+            } else {
+              _updateaccounts(accounts);
+            }
+            Navigator.of(context).pop();
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    ),
+  );
+}
 
   Future<void> _addaccounts() async {
     final id = accountsBox.isEmpty ? 0 : accountsBox.values.last.id + 1;
@@ -804,124 +828,127 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
-Container itemCard(BuildContext context, Accounts accounts, String initials,
-    List<Product?> filteredProducts) {
-  return Container(
-    margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.0),
-          ),
-          elevation: 2,
-          child: ListTile(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => CreateOrderScreen(
-                    account: accounts, onOrderCreated: _refresh,
-                  ),
-                ),
-              );
-            },
-            contentPadding: const EdgeInsets.all(16.0),
-            leading: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(accounts.color),
-                border: Border.all(
-                  color: Colors.white,
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  initials,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ),
+
+  Container itemCard(BuildContext context, Accounts accounts, String initials,
+      List<Product?> filteredProducts) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
             ),
-            title: Text(accounts.merchantName),
-            subtitle: Text(formatUpiId(accounts.upiId)),
-            trailing: SizedBox(
-              width: 96, // Adjust the width as needed
-              child: Row(
-                mainAxisSize: MainAxisSize.min, // Ensures the row does not take up more space than necessary
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.history),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TransactionScreen(
-                            account: accounts,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => _showForm(accounts: accounts),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () => _showAddProductForm(context, accounts),
-              padding: const EdgeInsets.all(8.0),
-            ),
-            IconButton(
-              icon: const Icon(Icons.arrow_forward),
-              onPressed: () {
+            elevation: 2,
+            child: ListTile(
+              onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => ProductListScreen(
-                      accounts: accounts,
-                      productBox: productBox,
-                      showEditProductForm: _showEditProductForm,
-                      refreshHomeScreen: _refresh,
+                    builder: (context) => CreateOrderScreen(
+                      account: accounts,
+                      onOrderCreated: _refresh,
                     ),
                   ),
                 );
               },
-              padding: const EdgeInsets.all(8.0),
+              contentPadding: const EdgeInsets.all(16.0),
+              leading: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(accounts.color),
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ),
+              title: Text(accounts.merchantName),
+              subtitle: Text(formatUpiId(accounts.upiId)),
+              trailing: SizedBox(
+                width: 96, // Adjust the width as needed
+                child: Row(
+                  mainAxisSize: MainAxisSize
+                      .min, // Ensures the row does not take up more space than necessary
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.history),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TransactionScreen(
+                              account: accounts,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => _showForm(accounts: accounts),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
-        SizedBox(
-          height: filteredProducts.isNotEmpty ? 110 : 0,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: filteredProducts.length,
-            itemBuilder: (context, index) {
-              final product = filteredProducts[index];
-
-              return productTile(product, accounts, () {
-                setState(() {});
-              });
-            },
           ),
-        ),
-      ],
-    ),
-  );
-}
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () => _showAddProductForm(context, accounts),
+                padding: const EdgeInsets.all(8.0),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ProductListScreen(
+                        accounts: accounts,
+                        productBox: productBox,
+                        showEditProductForm: _showEditProductForm,
+                        refreshHomeScreen: _refresh,
+                      ),
+                    ),
+                  );
+                },
+                padding: const EdgeInsets.all(8.0),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: filteredProducts.isNotEmpty ? 110 : 0,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: filteredProducts.length,
+              itemBuilder: (context, index) {
+                final product = filteredProducts[index];
+
+                return productTile(product, accounts, () {
+                  setState(() {});
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   GestureDetector productTile(
       Product? product, Accounts accounts, Function() refreshCallback) {
@@ -931,7 +958,8 @@ Container itemCard(BuildContext context, Accounts accounts, String initials,
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => CreateOrderScreen(
-                account: accounts, products: [product], onOrderCreated: _refresh,
+                account: accounts, products: [product],
+                onOrderCreated: _refresh,
                 // Passing the product price as the amount
               ),
             ),

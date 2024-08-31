@@ -97,7 +97,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                               _endDate = null;
                             });
                           },
-                          icon: Icon(Icons.close),
+                          icon: const Icon(Icons.close),
                         ),
                       ],
                     ),

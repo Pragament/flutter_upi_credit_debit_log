@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:io';
 
+
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
@@ -338,10 +339,10 @@ void _showProductSelectionDialog() {
                           leading: SizedBox(
                             width: 40.0, // Adjust the width as needed
                             height: 40.0, // Adjust the height as needed
-                            child: Image.file(
+                            child:product.imageUrl.isNotEmpty? Image.file(
                               File(product.imageUrl),
                               fit: BoxFit.cover,
-                            ),
+                            ):SizedBox(),
                           ),
                           title: Text(product.name),
                           subtitle: Text(
@@ -442,10 +443,10 @@ Widget _buildSelectedProductList() {
                       SizedBox(
                         height: 50.0, // Reduced height for the image
                         width: 50.0, // Reduced width for the image
-                        child: Image.file(
+                        child: product.imageUrl.isNotEmpty?Image.file(
                           File(product.imageUrl),
                           fit: BoxFit.cover,
-                        ),
+                        ):SizedBox(),
                       ),
                       const SizedBox(width: 2.0), // Minimal gap
                       Column(
@@ -617,7 +618,7 @@ Widget _buildSelectedProductList() {
                     const SizedBox(height: 8.0),
                     GestureDetector(
                       onTap: () => pickImage(setState),
-                      child: pickedImageFile != null
+                      child: pickedImageFile != null 
                           ? Image.file(
                               pickedImageFile!,
                               height: 150,

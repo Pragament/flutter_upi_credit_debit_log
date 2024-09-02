@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:payment/order_detail_screen.dart';
 import 'package:payment/pay.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -12,6 +14,7 @@ class TransactionScreen extends StatefulWidget {
   const TransactionScreen({super.key, this.account});
 
   @override
+  // ignore: library_private_types_in_public_api
   _TransactionScreenState createState() => _TransactionScreenState();
 }
 
@@ -20,9 +23,194 @@ class _TransactionScreenState extends State<TransactionScreen> {
   String _searchQuery = '';
   DateTime? _startDate;
   DateTime? _endDate;
+  final LocalAuthentication auth = LocalAuthentication();
+
+  Timer? _inactivityTimer;
+  static const int _inactivityDuration = 10 * 60; // 10 minutes in seconds
+
+  @override
+  void initState() {
+    super.initState();
+    _startInactivityTimer();
+  }
+
+  @override
+  void dispose() {
+    _inactivityTimer?.cancel();
+    super.dispose();
+  }
+
+  // Method to start the inactivity timer
+  void _startInactivityTimer() {
+    _inactivityTimer?.cancel(); // Cancel any existing timer
+    _inactivityTimer = Timer(Duration(seconds: _inactivityDuration), () async {
+      bool isAuthenticated = await authenticate();
+      if (!isAuthenticated) {
+        // Handle failed authentication (e.g., lock the screen or navigate to a login screen)
+        print('Authentication failed after inactivity.');
+      } else {
+        print('User authenticated successfully after inactivity.');
+      }
+    });
+  }
+
+  // Reset the inactivity timer on user activity
+  void _resetInactivityTimer() {
+    _startInactivityTimer();
+  }
+
+  Future<bool> authenticate() async {
+    try {
+      bool canCheckBiometrics = await auth.canCheckBiometrics;
+      bool isAuthenticated = false;
+
+      if (canCheckBiometrics) {
+        isAuthenticated = await auth.authenticate(
+          localizedReason: 'Please authenticate to access the app',
+          options: const AuthenticationOptions(biometricOnly: true),
+        );
+      } else {}
+
+      return isAuthenticated;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void _showDateRangePicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        DateTime? tempStartDate = _startDate;
+        DateTime? tempEndDate = _endDate;
+        Map<DateTime, List<Order>> ordersPerDay = {};
+
+        final orders = Hive.box<Order>('orders').values;
+        print('Total orders in Hive box: ${orders.length}');
+        for (var order in orders) {
+          print('Order timestamp: ${order.timestamp}');
+          final orderDate = DateTime(
+              order.timestamp.year, order.timestamp.month, order.timestamp.day);
+          print('Normalized order date: $orderDate');
+          if (ordersPerDay.containsKey(orderDate)) {
+            ordersPerDay[orderDate]!.add(order);
+          } else {
+            ordersPerDay[orderDate] = [order];
+          }
+        }
+
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TableCalendar(
+                    focusedDay: DateTime.now(),
+                    firstDay: DateTime(2000),
+                    lastDay: DateTime(2100),
+                    rangeSelectionMode: RangeSelectionMode.toggledOn,
+                    selectedDayPredicate: (day) =>
+                        isSameDay(day, tempStartDate) ||
+                        isSameDay(day, tempEndDate),
+                    rangeStartDay: tempStartDate,
+                    rangeEndDay: tempEndDate,
+                    onRangeSelected: (start, end, focusedDay) {
+                      setModalState(() {
+                        tempStartDate = start;
+                        tempEndDate = end;
+                      });
+                    },
+                    calendarStyle: const CalendarStyle(
+                      outsideDaysVisible: false,
+                    ),
+                    eventLoader: (day) {
+                      final normalizedDay =
+                          DateTime(day.year, day.month, day.day);
+                      return ordersPerDay[normalizedDay] ?? [];
+                    },
+                    onDaySelected: (selectedDay, focusedDay) {
+                      setModalState(() {
+                        if (tempStartDate == null ||
+                            (tempStartDate != null && tempEndDate != null)) {
+                          tempStartDate = selectedDay;
+                          tempEndDate = null;
+                        } else if (tempEndDate == null) {
+                          tempEndDate = selectedDay;
+                        }
+                      });
+                    },
+                    calendarBuilders: CalendarBuilders(
+                      markerBuilder: (context, day, events) {
+                        if (events.isNotEmpty) {
+                          return Positioned(
+                            bottom: 0,
+                            right: 2.0,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(6.0),
+                              child: Center(
+                                child: Text(
+                                  '${events.length}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14.0,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        } else {
+                          return const SizedBox();
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _startDate = tempStartDate;
+                        _endDate = tempEndDate;
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Apply Date Filter'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: authenticate(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError || !snapshot.data!) {
+          return const Scaffold(
+            body: Center(child: Text('Authentication failed')),
+          );
+        } else {
+          return customBody(context);
+        }
+      },
+    );
+  }
+
+  Scaffold customBody(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Recent Transactions'),
@@ -159,122 +347,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
       ),
     );
   }
-
-  void _showDateRangePicker(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        DateTime? tempStartDate = _startDate;
-        DateTime? tempEndDate = _endDate;
-        Map<DateTime, List<Order>> ordersPerDay = {};
-
-        final orders = Hive.box<Order>('orders').values;
-        print('Total orders in Hive box: ${orders.length}');
-        for (var order in orders) {
-          print('Order timestamp: ${order.timestamp}');
-          final orderDate = DateTime(
-              order.timestamp.year, order.timestamp.month, order.timestamp.day);
-          print('Normalized order date: $orderDate');
-          if (ordersPerDay.containsKey(orderDate)) {
-            ordersPerDay[orderDate]!.add(order);
-          } else {
-            ordersPerDay[orderDate] = [order];
-          }
-        }
-
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TableCalendar(
-                    focusedDay: DateTime.now(),
-                    firstDay: DateTime(2000),
-                    lastDay: DateTime(2100),
-                    rangeSelectionMode: RangeSelectionMode.toggledOn,
-                    selectedDayPredicate: (day) =>
-                        isSameDay(day, tempStartDate) ||
-                        isSameDay(day, tempEndDate),
-                    rangeStartDay: tempStartDate,
-                    rangeEndDay: tempEndDate,
-                    onRangeSelected: (start, end, focusedDay) {
-                      setModalState(() {
-                        tempStartDate = start;
-                        tempEndDate = end;
-                      });
-                    },
-                    calendarStyle: const CalendarStyle(
-                      outsideDaysVisible: false,
-                    ),
-                    eventLoader: (day) {
-                      final normalizedDay =
-                          DateTime(day.year, day.month, day.day);
-                      return ordersPerDay[normalizedDay] ?? [];
-                    },
-                    onDaySelected: (selectedDay, focusedDay) {
-                      setModalState(() {
-                        if (tempStartDate == null ||
-                            (tempStartDate != null && tempEndDate != null)) {
-                          tempStartDate = selectedDay;
-                          tempEndDate = null;
-                        } else if (tempEndDate == null) {
-                          tempEndDate = selectedDay;
-                        }
-                      });
-                    },
-                    calendarBuilders: CalendarBuilders(
-                      markerBuilder: (context, day, events) {
-                        if (events.isNotEmpty) {
-                          return Positioned(
-                            bottom: 0,
-                            right: 2.0,
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                color: Colors.blue,
-                                shape: BoxShape.circle,
-                              ),
-                              padding: const EdgeInsets.all(6.0),
-                              child: Center(
-                                child: Text(
-                                  '${events.length}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14.0,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        } else {
-                          return const SizedBox();
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _startDate = tempStartDate;
-                        _endDate = tempEndDate;
-                      });
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Apply Date Filter'),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
 }
-
-// ... (rest of the code including OrderCard, ProductImagesList etc.)
 
 class OrderCard extends StatelessWidget {
   final Order order;

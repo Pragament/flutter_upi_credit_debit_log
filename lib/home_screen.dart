@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:payment/create_order_screen.dart';
 import 'package:payment/order_list_screen.dart';
 import 'package:payment/product_list_screen.dart';
@@ -37,12 +39,58 @@ class _HomeScreenState extends State<HomeScreen> {
 
   get sha256 => null;
 
+  final LocalAuthentication auth = LocalAuthentication();
+
+  Timer? _inactivityTimer;
+  static const int _inactivityDuration = 10 * 60; // 10 minutes in seconds
+
+
+
+  // Method to start the inactivity timer
+  void _startInactivityTimer() {
+    _inactivityTimer?.cancel(); // Cancel any existing timer
+    _inactivityTimer = Timer(Duration(seconds: _inactivityDuration), () async {
+      bool isAuthenticated = await _authenticate();
+      if (!isAuthenticated) {
+        // Handle failed authentication (e.g., lock the screen or navigate to a login screen)
+        print('Authentication failed after inactivity.');
+      } else {
+        print('User authenticated successfully after inactivity.');
+      }
+    });
+  }
+
+  // Reset the inactivity timer on user activity
+  void _resetInactivityTimer() {
+    _startInactivityTimer();
+  }
+
+
+  Future<bool> _authenticate() async {
+    try {
+      bool canCheckBiometrics = await auth.canCheckBiometrics;
+      bool isAuthenticated = false;
+
+      if (canCheckBiometrics) {
+        isAuthenticated = await auth.authenticate(
+          localizedReason: 'Please authenticate to access the app',
+          options: const AuthenticationOptions(biometricOnly: true),
+        );
+      } else {}
+
+      return isAuthenticated;
+    } catch (e) {
+      return false;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     accountsBox = Hive.box<Accounts>('accounts');
     productBox = Hive.box<Product>('products');
     _manageQuickActions(); // Initialize quick actions on startup
+     _startInactivityTimer();
     // _manageProductQuickActions(); // Initialize product quick actions
   }
 
@@ -54,6 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _upiIdController.dispose();
     _currencyController.dispose();
     super.dispose();
+    _inactivityTimer?.cancel();
   }
 
   void _toggleSortOrder() {
@@ -120,179 +169,196 @@ class _HomeScreenState extends State<HomeScreen> {
             DateTime.now().difference(archiveDate).inDays >= 30);
 
     showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(accounts == null ? 'Add accounts' : 'Edit accounts'),
-        content: StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            // List of currencies
-            final List<String> currencies = ['INR'];
+        context: context,
+        builder: (_) => FutureBuilder<bool>(
+              future: _authenticate(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                } else if (snapshot.hasError || !snapshot.data!) {
+                  return const Scaffold(
+                    body: Center(child: Text('Authentication failed')),
+                  );
+                } else {
+                  return dialog(accounts, isDeletable);
+                }
+              },
+            ));
+  }
 
-            // Ensure _currency is in the list of currencies
-            if (_currency.isEmpty || !currencies.contains(_currency)) {
-              _currency =
-                  currencies.first; // Default to the first item if not found
-            }
+  AlertDialog dialog(Accounts? accounts, bool isDeletable) {
+    return AlertDialog(
+      title: Text(accounts == null ? 'Add accounts' : 'Edit accounts'),
+      content: StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          // List of currencies
+          final List<String> currencies = ['INR'];
 
-            // Move the _pickColor method inside the builder
-            void pickColor() async {
-              final Color? color = await showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Pick a color'),
-                  content: SingleChildScrollView(
-                    child: BlockPicker(
-                      pickerColor: _selectedColor,
-                      onColorChanged: (Color color) {
-                        setState(() => _selectedColor = color); // Update state
-                        Navigator.of(context).pop(color);
-                      },
-                    ),
+          // Ensure _currency is in the list of currencies
+          if (_currency.isEmpty || !currencies.contains(_currency)) {
+            _currency =
+                currencies.first; // Default to the first item if not found
+          }
+
+          // Move the _pickColor method inside the builder
+          void pickColor() async {
+            final Color? color = await showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Pick a color'),
+                content: SingleChildScrollView(
+                  child: BlockPicker(
+                    pickerColor: _selectedColor,
+                    onColorChanged: (Color color) {
+                      setState(() => _selectedColor = color); // Update state
+                      Navigator.of(context).pop(color);
+                    },
                   ),
                 ),
-              );
+              ),
+            );
 
-              if (color != null) {
-                setState(() => _selectedColor = color); // Update state
-              }
+            if (color != null) {
+              setState(() => _selectedColor = color); // Update state
             }
+          }
 
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: _merchantNameController,
-                    decoration:
-                        const InputDecoration(labelText: 'Merchant Name'),
-                  ),
-                  const SizedBox(height: 16.0),
-                  TextField(
-                    controller: _upiIdController,
-                    decoration: const InputDecoration(labelText: 'UPI ID'),
-                  ),
-                  const SizedBox(height: 16.0),
-                  // Row with DropdownButton and Text
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Currency:',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _merchantNameController,
+                  decoration: const InputDecoration(labelText: 'Merchant Name'),
+                ),
+                const SizedBox(height: 16.0),
+                TextField(
+                  controller: _upiIdController,
+                  decoration: const InputDecoration(labelText: 'UPI ID'),
+                ),
+                const SizedBox(height: 16.0),
+                // Row with DropdownButton and Text
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Currency:',
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
-                      DropdownButton<String>(
-                        value: _currency,
-                        items: currencies.map((String currency) {
-                          return DropdownMenuItem<String>(
-                            value: currency,
-                            child: Text(currency),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _currency = newValue!;
-                          });
-                        },
+                    ),
+                    DropdownButton<String>(
+                      value: _currency,
+                      items: currencies.map((String currency) {
+                        return DropdownMenuItem<String>(
+                          value: currency,
+                          child: Text(currency),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _currency = newValue!;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+                Row(
+                  children: [
+                    const Text('Choose Color:'),
+                    const SizedBox(width: 8.0),
+                    GestureDetector(
+                      onTap: pickColor,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        color: _selectedColor,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16.0),
-                  Row(
-                    children: [
-                      const Text('Choose Color:'),
-                      const SizedBox(width: 8.0),
-                      GestureDetector(
-                        onTap: pickColor,
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          color: _selectedColor,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _createShortcut,
+                      onChanged: (value) {
+                        setState(() {
+                          _createShortcut = value!;
+                        });
+                      },
+                    ),
+                    const Text('Create Shortcut'),
+                  ],
+                ),
+                if (accounts != null) ...[
                   const SizedBox(height: 16.0),
                   Row(
                     children: [
                       Checkbox(
-                        value: _createShortcut,
+                        value: accounts.archived,
                         onChanged: (value) {
                           setState(() {
-                            _createShortcut = value!;
+                            accounts.archived = value!;
+                            accounts.archiveDate =
+                                value ? DateTime.now() : null;
                           });
                         },
                       ),
-                      const Text('Create Shortcut'),
+                      const Text('Archived'),
                     ],
                   ),
-                  if (accounts != null) ...[
-                    const SizedBox(height: 16.0),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: accounts.archived,
-                          onChanged: (value) {
-                            setState(() {
-                              accounts.archived = value!;
-                              accounts.archiveDate =
-                                  value ? DateTime.now() : null;
-                            });
-                          },
-                        ),
-                        const Text('Archived'),
-                      ],
-                    ),
-                  ],
                 ],
-              ),
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          accounts != null
-              ? TextButton(
-                  onPressed: () {
-                    if (!isDeletable) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'You cannot delete this account until 30 days have passed since archiving.'),
-                        ),
-                      );
-                    } else {
-                      _deleteaccounts(accounts);
-                    }
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(
-                    'Delete',
-                    style: TextStyle(
-                      color: isDeletable ? Colors.red : Colors.grey,
-                    ),
-                  ),
-                )
-              : const SizedBox(
-                  height: 0,
-                  width: 0,
-                ),
-          TextButton(
-            onPressed: () {
-              if (accounts == null) {
-                _addaccounts();
-              } else {
-                _updateaccounts(accounts);
-              }
-              Navigator.of(context).pop();
-            },
-            child: const Text('Save'),
-          ),
-        ],
+              ],
+            ),
+          );
+        },
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        accounts != null
+            ? TextButton(
+                onPressed: () {
+                  if (!isDeletable) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'You cannot delete this account until 30 days have passed since archiving.'),
+                      ),
+                    );
+                  } else {
+                    _deleteaccounts(accounts);
+                  }
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  'Delete',
+                  style: TextStyle(
+                    color: isDeletable ? Colors.red : Colors.grey,
+                  ),
+                ),
+              )
+            : const SizedBox(
+                height: 0,
+                width: 0,
+              ),
+        TextButton(
+          onPressed: () {
+            if (accounts == null) {
+              _addaccounts();
+            } else {
+              _updateaccounts(accounts);
+            }
+            Navigator.of(context).pop();
+          },
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 
@@ -425,165 +491,204 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              title: const Text('Edit Product'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: productNameController,
-                      decoration:
-                          const InputDecoration(hintText: 'Enter product name'),
-                      autofocus: true,
-                    ),
-                    const SizedBox(height: 8.0),
-                    TextField(
-                      controller: productDescriptionController,
-                      decoration: const InputDecoration(
-                          hintText: 'Enter product description'),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 8.0),
-                    TextField(
-                      controller: productPriceController,
-                      decoration: const InputDecoration(
-                          hintText: 'Enter product price'),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 8.0),
-                    GestureDetector(
-                      onTap: () => pickImage(setState),
-                      child: pickedImageFile != null
-                          ? Image.file(
-                              pickedImageFile!,
-                              height: 150,
-                              width: 150,
-                              fit: BoxFit.cover,
-                            )
-                          : product.imageUrl.isNotEmpty
-                              ? Image.file(
-                                  File(product.imageUrl),
-                                  height: 150,
-                                  width: 150,
-                                  fit: BoxFit.cover,
-                                )
-                              : Container(
-                                  height: 50,
-                                  width: 50,
-                                  color: Colors.grey[300],
-                                  child: const Icon(Icons.add_a_photo,
-                                      color: Colors.white),
-                                ),
-                    ),
-                    const SizedBox(height: 16.0),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: createProdShortcut,
-                          onChanged: (value) {
-                            setState(() {
-                              createProdShortcut = value!;
-                            });
-                          },
-                        ),
-                        const Text('Create Shortcut'),
-                      ],
-                    ),
-                    const SizedBox(height: 16.0),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: isArchived,
-                          onChanged: (value) {
-                            setState(() {
-                              isArchived = value!;
-                              archiveDate = value ? DateTime.now() : null;
-                            });
-                          },
-                        ),
-                        const Text('Archived'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () {
-                    final productName = productNameController.text.trim();
-                    final productDescription =
-                        productDescriptionController.text.trim();
-                    final productPrice =
-                        double.tryParse(productPriceController.text.trim()) ??
-                            0.0;
-
-                    if (productName.isNotEmpty) {
-                      // Update the product details
-                      product.name = productName;
-                      product.description = productDescription;
-                      product.price = productPrice;
-                      if (pickedImageFile != null) {
-                        product.imageUrl =
-                            pickedImageFile!.path; // Store the file path
-                      }
-                      product.archived = isArchived;
-                      product.archiveDate = archiveDate;
-
-                      // Save the updated product
-                      product.save();
-
-                      // Manage the product shortcut creation
-                      if (createProdShortcut) {
-                        product.createShortcut = true;
-                        _createProductQuickAction(product);
-                        //_manageProductQuickActions();
-                        _manageQuickActions();
-                      } else {
-                        product.createShortcut = false;
-                        // _manageProductQuickActions();
-                        _manageQuickActions();
-                      }
-
-                      refreshCallback(); // Trigger the refresh in the parent widget
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  child: const Text('Save'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    if (!isDeletable) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'You cannot delete this account until 30 days have passed since archiving.'),
-                        ),
-                      );
-                    } else {
-                      _deleteproducts(product, accounts);
-                    }
-                    _refresh();
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(
-                    'Delete',
-                    style: TextStyle(
-                      color: isDeletable ? Colors.red : Colors.grey,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Cancel'),
-                ),
-              ],
+            return FutureBuilder<bool>(
+              future: _authenticate(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError || !snapshot.data!) {
+                  return const Center(child: Text('Authentication failed'));
+                } else {
+                  return editproddialog(
+                      productNameController,
+                      productDescriptionController,
+                      productPriceController,
+                      pickImage,
+                      setState,
+                      pickedImageFile,
+                      product,
+                      createProdShortcut,
+                      isArchived,
+                      archiveDate,
+                      refreshCallback,
+                      context,
+                      isDeletable,
+                      accounts);
+                }
+              },
             );
           },
         );
       },
+    );
+  }
+
+  AlertDialog editproddialog(
+      TextEditingController productNameController,
+      TextEditingController productDescriptionController,
+      TextEditingController productPriceController,
+      Future<void> pickImage(StateSetter setState),
+      StateSetter setState,
+      File? pickedImageFile,
+      Product product,
+      bool createProdShortcut,
+      bool isArchived,
+      DateTime? archiveDate,
+      refreshCallback(),
+      BuildContext context,
+      bool isDeletable,
+      Accounts accounts) {
+    return AlertDialog(
+      title: const Text('Edit Product'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: productNameController,
+              decoration: const InputDecoration(hintText: 'Enter product name'),
+              autofocus: true,
+            ),
+            const SizedBox(height: 8.0),
+            TextField(
+              controller: productDescriptionController,
+              decoration:
+                  const InputDecoration(hintText: 'Enter product description'),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 8.0),
+            TextField(
+              controller: productPriceController,
+              decoration:
+                  const InputDecoration(hintText: 'Enter product price'),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 8.0),
+            GestureDetector(
+              onTap: () => pickImage(setState),
+              child: pickedImageFile != null
+                  ? Image.file(
+                      pickedImageFile!,
+                      height: 150,
+                      width: 150,
+                      fit: BoxFit.cover,
+                    )
+                  : product.imageUrl.isNotEmpty
+                      ? Image.file(
+                          File(product.imageUrl),
+                          height: 150,
+                          width: 150,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          height: 50,
+                          width: 50,
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.add_a_photo,
+                              color: Colors.white),
+                        ),
+            ),
+            const SizedBox(height: 16.0),
+            Row(
+              children: [
+                Checkbox(
+                  value: createProdShortcut,
+                  onChanged: (value) {
+                    setState(() {
+                      createProdShortcut = value!;
+                    });
+                  },
+                ),
+                const Text('Create Shortcut'),
+              ],
+            ),
+            const SizedBox(height: 16.0),
+            Row(
+              children: [
+                Checkbox(
+                  value: isArchived,
+                  onChanged: (value) {
+                    setState(() {
+                      isArchived = value!;
+                      archiveDate = value ? DateTime.now() : null;
+                    });
+                  },
+                ),
+                const Text('Archived'),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () {
+            final productName = productNameController.text.trim();
+            final productDescription = productDescriptionController.text.trim();
+            final productPrice =
+                double.tryParse(productPriceController.text.trim()) ?? 0.0;
+
+            if (productName.isNotEmpty) {
+              // Update the product details
+              product.name = productName;
+              product.description = productDescription;
+              product.price = productPrice;
+              if (pickedImageFile != null) {
+                product.imageUrl = pickedImageFile!.path; // Store the file path
+              }
+              product.archived = isArchived;
+              product.archiveDate = archiveDate;
+
+              // Save the updated product
+              product.save();
+
+              // Manage the product shortcut creation
+              if (createProdShortcut) {
+                product.createShortcut = true;
+                _createProductQuickAction(product);
+                //_manageProductQuickActions();
+                _manageQuickActions();
+              } else {
+                product.createShortcut = false;
+                // _manageProductQuickActions();
+                _manageQuickActions();
+              }
+
+              refreshCallback(); // Trigger the refresh in the parent widget
+              Navigator.of(context).pop();
+            }
+          },
+          child: const Text('Save'),
+        ),
+        TextButton(
+          onPressed: () {
+            if (!isDeletable) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      'You cannot delete this account until 30 days have passed since archiving.'),
+                ),
+              );
+            } else {
+              _deleteproducts(product, accounts);
+            }
+            _refresh();
+            Navigator.of(context).pop();
+          },
+          child: Text(
+            'Delete',
+            style: TextStyle(
+              color: isDeletable ? Colors.red : Colors.grey,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text('Cancel'),
+        ),
+      ],
     );
   }
 
@@ -622,105 +727,130 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              title: const Text('Add New Product'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: productNameController,
-                      decoration:
-                          const InputDecoration(hintText: 'Enter product name'),
-                      autofocus: true,
-                    ),
-                    const SizedBox(height: 8.0),
-                    TextField(
-                      controller: productDescriptionController,
-                      decoration: const InputDecoration(
-                          hintText: 'Enter product description'),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 8.0),
-                    TextField(
-                      controller: productPriceController,
-                      decoration: const InputDecoration(
-                          hintText: 'Enter product price'),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 8.0),
-                    GestureDetector(
-                      onTap: () => pickImage(setState),
-                      child: pickedImageFile != null
-                          ? Image.file(
-                              pickedImageFile!,
-                              height: 150,
-                              width: 150,
-                              fit: BoxFit.cover,
-                            )
-                          : Container(
-                              height: 50,
-                              width: 50,
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.add_a_photo,
-                                  color: Colors.white),
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () {
-                    final productName = productNameController.text.trim();
-                    final productDescription =
-                        productDescriptionController.text.trim();
-                    final productPrice =
-                        double.tryParse(productPriceController.text.trim()) ??
-                            0.0;
-
-                    if (productName.isNotEmpty) {
-                      // Generate a unique ID by using the next available integer key
-                      final productBox = Hive.box<Product>('products');
-                      final int newProductId = productBox.isEmpty
-                          ? 0
-                          : productBox.keys.cast<int>().last + 1;
-
-                      // Create the new product
-                      final newProduct = Product(
-                        id: newProductId,
-                        name: productName,
-                        price: productPrice,
-                        description: productDescription,
-                        imageUrl: pickedImageFile!
-                            .path, // Store the file path if an image is picked
-                      );
-
-                      // Save the product to the Hive box
-                      productBox.put(newProductId, newProduct);
-
-                      // Update the accounts with the new product ID
-                      accounts.productIds.add(newProductId);
-                      Hive.box<Accounts>('accounts')
-                          .put(accounts.key, accounts);
-
-                      Navigator.of(context).pop();
-                    }
-                    _refresh();
-                  },
-                  child: const Text('Save'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Cancel'),
-                ),
-              ],
+            return FutureBuilder<bool>(
+              future: _authenticate(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError || !snapshot.data!) {
+                  return const Center(child: Text('Authentication failed'));
+                } else {
+                  return addprodform(
+                      productNameController,
+                      productDescriptionController,
+                      productPriceController,
+                      pickImage,
+                      setState,
+                      pickedImageFile,
+                      accounts,
+                      context);
+                }
+              },
             );
           },
         );
       },
+    );
+  }
+
+  AlertDialog addprodform(
+      TextEditingController productNameController,
+      TextEditingController productDescriptionController,
+      TextEditingController productPriceController,
+      Future<void> pickImage(StateSetter setState),
+      StateSetter setState,
+      File? pickedImageFile,
+      Accounts accounts,
+      BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add New Product'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: productNameController,
+              decoration: const InputDecoration(hintText: 'Enter product name'),
+              autofocus: true,
+            ),
+            const SizedBox(height: 8.0),
+            TextField(
+              controller: productDescriptionController,
+              decoration:
+                  const InputDecoration(hintText: 'Enter product description'),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 8.0),
+            TextField(
+              controller: productPriceController,
+              decoration:
+                  const InputDecoration(hintText: 'Enter product price'),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 8.0),
+            GestureDetector(
+              onTap: () => pickImage(setState),
+              child: pickedImageFile != null
+                  ? Image.file(
+                      pickedImageFile!,
+                      height: 150,
+                      width: 150,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(
+                      height: 50,
+                      width: 50,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.add_a_photo, color: Colors.white),
+                    ),
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () {
+            final productName = productNameController.text.trim();
+            final productDescription = productDescriptionController.text.trim();
+            final productPrice =
+                double.tryParse(productPriceController.text.trim()) ?? 0.0;
+
+            if (productName.isNotEmpty) {
+              // Generate a unique ID by using the next available integer key
+              final productBox = Hive.box<Product>('products');
+              final int newProductId =
+                  productBox.isEmpty ? 0 : productBox.keys.cast<int>().last + 1;
+
+              // Create the new product
+              final newProduct = Product(
+                id: newProductId,
+                name: productName,
+                price: productPrice,
+                description: productDescription,
+                imageUrl: pickedImageFile!
+                    .path, // Store the file path if an image is picked
+              );
+
+              // Save the product to the Hive box
+              productBox.put(newProductId, newProduct);
+
+              // Update the accounts with the new product ID
+              accounts.productIds.add(newProductId);
+              Hive.box<Accounts>('accounts').put(accounts.key, accounts);
+
+              Navigator.of(context).pop();
+            }
+            _refresh();
+          },
+          child: const Text('Save'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text('Cancel'),
+        ),
+      ],
     );
   }
 

@@ -48,12 +48,12 @@ Widget build(BuildContext context) {
 
                 return product != null
                     ? ListTile(
-                        leading: Image.file(
+                        leading:product.imageUrl.isNotEmpty? Image.file(
                           File(product.imageUrl),
                           width: 60,
                           height: 60,
                           fit: BoxFit.cover,
-                        ),
+                        ):SizedBox(),
                         title: Text(product.name),
                         subtitle: Text('Price: ₹${product.price}'),
                       )

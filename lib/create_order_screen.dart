@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:io';
 
+
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
@@ -274,120 +275,129 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       );
     }
   }
+void _showProductSelectionDialog() {
+  TextEditingController searchController = TextEditingController();
+  List<Product> filteredProducts =
+      List.from(_products!); // Initialize filtered products
 
-  void _showProductSelectionDialog() {
-    TextEditingController searchController = TextEditingController();
-    List<Product> filteredProducts =
-        List.from(_products!); // Initialize filtered products
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        // Using StatefulBuilder to manage the dialog's internal state
-        return AlertDialog(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Select Products'),
-              IconButton(
-                icon: const Icon(Icons.add), // Add plus icon here
-                onPressed: () {
-                  Navigator.of(context)
-                      .pop(); // Close the current dialog before opening the new one
-                  _showAddProductForm(
-                      context, _account); // Call the add product form
-                },
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: StatefulBuilder(
-              builder: (BuildContext context, StateSetter dialogSetState) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Add Search Bar
-                    TextField(
-                      controller: searchController,
-                      decoration: const InputDecoration(
-                        labelText: 'Search',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                      onChanged: (value) {
-                        // Update the filtered products based on the search input
-                        dialogSetState(() {
-                          filteredProducts = _products!.where((product) {
-                            return product.name
-                                .toLowerCase()
-                                .contains(value.toLowerCase());
-                          }).toList();
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8.0),
-                    Expanded(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: filteredProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = filteredProducts[index];
-                          final isSelected =
-                              _selectedProducts.contains(product);
-
-                          return ListTile(
-                            title: Text(product.name),
-                            subtitle: Text(
-                                'Price: ₹${product.price.toStringAsFixed(2)}'),
-                            trailing: Checkbox(
-                              value: isSelected,
-                              onChanged: (bool? value) {
-                                dialogSetState(() {
-                                  if (value == true) {
-                                    if (!_selectedProducts.contains(product)) {
-                                      _selectedProducts.add(product);
-                                      _selectedProductQuantities[product] = 1;
-                                    }
-                                  } else {
-                                    _selectedProducts.remove(product);
-                                    _selectedProductQuantities.remove(product);
-                                  }
-                                });
-
-                                // Update parent state when product selection changes
-                                setState(() {
-                                  _amountController.text =
-                                      _calculateTotalAmount()
-                                          .toStringAsFixed(2);
-                                });
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
+  showDialog(
+    context: context,
+    builder: (context) {
+      // Using StatefulBuilder to manage the dialog's internal state
+      return AlertDialog(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Select Products'),
+            IconButton(
+              icon: const Icon(Icons.add), // Add plus icon here
               onPressed: () {
-                setState(() {
-                  // Update parent state when dialog closes
-                  _amountController.text =
-                      _calculateTotalAmount().toStringAsFixed(2);
-                });
-                Navigator.of(context).pop();
+                Navigator.of(context)
+                    .pop(); // Close the current dialog before opening the new one
+                _showAddProductForm(
+                    context, _account); // Call the add product form
               },
-              child: const Text('Done'),
             ),
           ],
-        );
-      },
-    );
-  }
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter dialogSetState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Add Search Bar
+                  TextField(
+                    controller: searchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Search',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (value) {
+                      // Update the filtered products based on the search input
+                      dialogSetState(() {
+                        filteredProducts = _products!.where((product) {
+                          return product.name
+                              .toLowerCase()
+                              .contains(value.toLowerCase());
+                        }).toList();
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8.0),
+                  Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: filteredProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = filteredProducts[index];
+                        final isSelected =
+                            _selectedProducts.contains(product);
+
+                        return ListTile(
+                          leading: SizedBox(
+                            width: 40.0, // Adjust the width as needed
+                            height: 40.0, // Adjust the height as needed
+                            child:product.imageUrl.isNotEmpty? Image.file(
+                              File(product.imageUrl),
+                              fit: BoxFit.cover,
+                            ):SizedBox(),
+                          ),
+                          title: Text(product.name),
+                          subtitle: Text(
+                              'Price: ₹${product.price.toStringAsFixed(2)}'),
+                          trailing: Checkbox(
+                            value: isSelected,
+                            onChanged: (bool? value) {
+                              dialogSetState(() {
+                                if (value == true) {
+                                  if (!_selectedProducts.contains(product)) {
+                                    _selectedProducts.add(product);
+                                    _selectedProductQuantities[product] = 1;
+                                  }
+                                } else {
+                                  _selectedProducts.remove(product);
+                                  _selectedProductQuantities.remove(product);
+                                }
+                              });
+
+                              // Update parent state when product selection changes
+                              setState(() {
+                                _amountController.text =
+                                    _calculateTotalAmount()
+                                        .toStringAsFixed(2);
+                                _generateQrCode(); // Add this line
+                              });
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                // Update parent state when dialog closes
+                _amountController.text =
+                    _calculateTotalAmount().toStringAsFixed(2);
+                _generateQrCode(); // Add this line
+              });
+              Navigator.of(context).pop();
+            },
+            child: const Text('Done'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   Widget _buildQRCodeWidget() {
     if (_qrCodeData != null) {
@@ -408,71 +418,114 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       return const SizedBox.shrink();
     }
   }
+Widget _buildSelectedProductList() {
+  if (_selectedProducts.isNotEmpty) {
+    return SizedBox(
+      height: 100.0, // Maintain height as required
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _selectedProducts.length,
+        itemBuilder: (context, index) {
+          final product = _selectedProducts[index];
+          final quantity = _selectedProductQuantities[product] ?? 1;
 
-  Widget _buildSelectedProductList() {
-    if (_selectedProducts.isNotEmpty) {
-      return SizedBox(
-        height: 110.0,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: _selectedProducts.length,
-          itemBuilder: (context, index) {
-            final product = _selectedProducts[index];
-            final quantity = _selectedProductQuantities[product] ?? 1;
-
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(product.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Price: ₹${product.price.toStringAsFixed(2)}'),
-                    Row(
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 8.0), // Reduced margin
+            child: Container(
+              padding: const EdgeInsets.all(8.0), // Reduce padding even further
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // Minimize extra space
+                crossAxisAlignment: CrossAxisAlignment.start, // Align content to the start
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center, // Center-align within row
+                    children: [
+                      SizedBox(
+                        height: 50.0, // Reduced height for the image
+                        width: 50.0, // Reduced width for the image
+                        child: product.imageUrl.isNotEmpty?Image.file(
+                          File(product.imageUrl),
+                          fit: BoxFit.cover,
+                        ):SizedBox(),
+                      ),
+                      const SizedBox(width: 2.0), // Minimal gap
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start, // Align text to the start
+                        children: [
+                          Text(
+                            product.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10.0, // Reduced font size
+                            ),
+                          ),
+                          Text(
+                            '₹${product.price.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 10.0, // Smaller font size
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start, // Align buttons to start
                       children: [
                         IconButton(
+                          iconSize: 14.0, // Further reduced icon size
+                          padding: EdgeInsets.zero, // Remove padding around icon button
+                          constraints: const BoxConstraints(), // Remove constraints to fit better
                           icon: const Icon(Icons.remove),
                           onPressed: () {
                             setState(() {
                               if (quantity > 1) {
-                                _selectedProductQuantities[product] =
-                                    quantity - 1;
+                                _selectedProductQuantities[product] = quantity - 1;
                               } else {
                                 _selectedProducts.remove(product);
                                 _selectedProductQuantities.remove(product);
                               }
-                              _amountController.text =
-                                  _calculateTotalAmount().toStringAsFixed(2);
+                              _amountController.text = _calculateTotalAmount().toStringAsFixed(2);
+                              _generateQrCode();
                             });
                           },
                         ),
-                        Text(quantity.toString()),
+                        Text(
+                          quantity.toString(),
+                          style: const TextStyle(fontSize: 10.0), // Reduced font size
+                        ),
                         IconButton(
+                          iconSize: 14.0, // Further reduced icon size
+                          padding: EdgeInsets.zero, // Remove padding around icon button
+                          constraints: const BoxConstraints(), // Remove constraints to fit better
                           icon: const Icon(Icons.add),
                           onPressed: () {
                             setState(() {
-                              _selectedProductQuantities[product] =
-                                  quantity + 1;
-                              _amountController.text =
-                                  _calculateTotalAmount().toStringAsFixed(2);
+                              _selectedProductQuantities[product] = quantity + 1;
+                              _amountController.text = _calculateTotalAmount().toStringAsFixed(2);
+                              _generateQrCode();
                             });
                           },
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  Text(
+                    'Total: ₹${(product.price * quantity).toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 10.0), // Smaller font size
+                  ),
+                ],
               ),
-            );
-          },
-        ),
-      );
-    } else {
-      return const Text('No products selected');
-    }
+            ),
+          );
+        },
+      ),
+    );
+  } else {
+    return const Text('No products selected');
   }
+}
 
   Widget _buildImagePicker(String? imagePath, bool isInvoice) {
     return GestureDetector(
@@ -565,7 +618,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     const SizedBox(height: 8.0),
                     GestureDetector(
                       onTap: () => pickImage(setState),
-                      child: pickedImageFile != null
+                      child: pickedImageFile != null 
                           ? Image.file(
                               pickedImageFile!,
                               height: 150,
@@ -619,8 +672,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           .put(accounts.key, accounts);
 
                       Navigator.of(context).pop();
-                     widget.onOrderCreated!();
+                      widget.onOrderCreated();
+                      _selectedProducts.add(newProduct);
+                      _generateQrCode();
                     }
+
                     _refresh();
                   },
                   child: const Text('Save'),
@@ -701,6 +757,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     onChanged: (bool? value) {
                       setState(() {
                         _includeAmountInQr = value ?? false;
+                        _generateQrCode();
                       });
                     },
                   ),
@@ -735,10 +792,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 ),
               ),
               const SizedBox(height: 16.0),
-              ElevatedButton(
-                onPressed: _generateQrCode,
-                child: const Text('Generate QR Code'),
-              ),
+              // ElevatedButton(
+              //   onPressed: _generateQrCode,
+              //   child: const Text('Generate QR Code'),
+              // ),
               const SizedBox(height: 16.0),
               ElevatedButton(
                 onPressed: _uploadOrder,

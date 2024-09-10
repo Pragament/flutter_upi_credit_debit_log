@@ -12,41 +12,6 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _authenticate(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (snapshot.hasError || !snapshot.data!) {
-          return Scaffold(
-            body: Center(child: Text('Authentication failed')),
-          );
-        } else {
-          return KBottom(quickActions: quickActions);
-        }
-        //return KBottom(quickActions: quickActions);
-      },
-    );
-  }
-
-  Future<bool> _authenticate() async {
-    try {
-      bool canCheckBiometrics = await auth.canCheckBiometrics;
-      bool isAuthenticated = false;
-
-      if (canCheckBiometrics) {
-        isAuthenticated = await auth.authenticate(
-          localizedReason: 'Please authenticate to access the app',
-          options: const AuthenticationOptions(biometricOnly: true),
-        );
-      } else {
-      }
-
-      return isAuthenticated;
-    } catch (e) {
-      return false;
-    }
+    return KBottom(quickActions: quickActions);
   }
 }

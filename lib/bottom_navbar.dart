@@ -1,4 +1,4 @@
-import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -20,7 +20,7 @@ class KBottom extends StatefulWidget {
 }
 
 class _KBottomState extends State<KBottom> {
-  int _bottomNavIndex = 0;
+  int _selectedPageIndex = 0; // Updated variable name for clarity
   final PageController _pageController = PageController();
 
   @override
@@ -41,45 +41,69 @@ class _KBottomState extends State<KBottom> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+       
+        backgroundColor: Colors.blue, // Customize the app bar color
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: const Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: Icon(CupertinoIcons.house_fill),
+              title: const Text('Home'),
+              onTap: () {
+                Navigator.of(context).pop(); // Close the drawer
+                setState(() {
+                  _selectedPageIndex = 0;
+                  _pageController.jumpToPage(0);
+                });
+              },
+            ),
+            ListTile(
+              leading: Icon(CupertinoIcons.add),
+              title: const Text('Transactions List'),
+              onTap: () {
+                Navigator.of(context).pop(); // Close the drawer
+                setState(() {
+                  _selectedPageIndex = 1;
+                  _pageController.jumpToPage(1);
+                });
+              },
+            ),
+          ],
+        ),
+      ),
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
           setState(() {
-            _bottomNavIndex = index;
+            _selectedPageIndex = index;
           });
         },
         children: [
-          // Replace with your Home screen widget
-
           HomeScreen(
-            quickActions: widget.quickActions, // Pass the QuickActions instance
+            quickActions: widget.quickActions,
           ),
           const TransactionScreen(),
-          const Scaffold(body: Center(child: Text("Settings"),),)
+          const Scaffold(
+            body: Center(
+              child: Text("Settings"),
+            ),
+          )
         ],
-      ),
-      bottomNavigationBar: AnimatedBottomNavigationBar(
-        backgroundColor:
-            Colors.blue.withOpacity(0.50), // Update with your color
-        elevation: 0,
-        splashColor: Colors.green, // Update with your color
-        icons: const [
-          CupertinoIcons.house_fill,
-          CupertinoIcons.add,
-          CupertinoIcons.settings,
-        ],
-        inactiveColor: Colors.white, // Update with your color
-        activeColor: Colors.yellow, // Update with your color
-        activeIndex: _bottomNavIndex,
-        notchSmoothness: NotchSmoothness.smoothEdge,
-        leftCornerRadius: 0,
-        rightCornerRadius: 0,
-        onTap: (index) {
-          setState(() {
-            _bottomNavIndex = index;
-            _pageController.jumpToPage(index);
-          });
-        },
       ),
     );
   }

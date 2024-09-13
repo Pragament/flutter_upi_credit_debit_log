@@ -4,7 +4,11 @@
 
 ## Roadmap
 https://github.com/Pragament/flutter_upi_credit_debit_log/issues
-https://github.com/orgs/Pragament/projects/30
+https://github.com/Pragament/flutter_upi_credit_debit_log/projects
+
+## Contributors guide
+please fork this project first, and then develop in your fork project. After
+development is completed, submit a PR to this project and merge it into the default branch.
 
 ## Current App screenshots
 ![image](https://github.com/user-attachments/assets/0d0531f0-77ae-4186-aa37-92c815006acd)

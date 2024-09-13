@@ -1,16 +1,13 @@
 # payment
 
-"A new Flutter project."
+"UPI QR code maker project."
 
-## Getting Started
+## Roadmap
+https://github.com/Pragament/flutter_upi_credit_debit_log/issues
+https://github.com/orgs/Pragament/projects/30
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Current App screenshots
+![image](https://github.com/user-attachments/assets/0d0531f0-77ae-4186-aa37-92c815006acd)
+![image](https://github.com/user-attachments/assets/3a86a99c-7d72-43de-b3a1-ebf9fed939ce)
+![image](https://github.com/user-attachments/assets/71ba4b99-5c99-4759-9447-7698bb18a723)
+![image](https://github.com/user-attachments/assets/c92b296d-06b9-4f9a-affc-910560c000a8)
